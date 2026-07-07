@@ -1,0 +1,21 @@
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Gradle / Android
+.gradle/
+build/
+**/build/
+local.properties
+**/local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Generated MediaPipe sample model
+app/src/main/assets/gesture_recognizer.task
+app/src/androidTest/assets/gesture_recognizer.task
