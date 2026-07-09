@@ -19,13 +19,14 @@ class GestureInspectorFormatterTest {
             inferenceTimeMs = 12L,
         )
 
-        assertTrue(display.summary.contains("Status: no hand"))
-        assertTrue(display.handDetails.contains("No hands detected"))
-        assertTrue(display.matchedAction.contains("Matched action: None"))
+        assertTrue(display.summary.contains("no hand"))
+        assertTrue(display.handDetails.contains("Show a hand"))
+        assertTrue(display.matchedAction.contains("Gesture None"))
+        assertTrue(display.matchedAction.contains("Action None"))
     }
 
     @Test
-    fun formatsTopCandidatesAndMatchedAction() {
+    fun formatsCompactUiAndDetailedDiagnostics() {
         val interaction = interaction()
         val event = GestureActionEvent(
             action = GestureAction(
@@ -49,10 +50,28 @@ class GestureInspectorFormatterTest {
             inferenceTimeMs = 9L,
         )
 
-        assertTrue(display.summary.contains("Hands: 1"))
-        assertTrue(display.matchedAction.contains("Open palm still"))
-        assertTrue(display.handDetails.contains("Top [1. Open Palm 90%"))
-        assertTrue(display.handDetails.contains("Binding open-palm-still"))
+        assertTrue(display.summary.contains("Hands 1"))
+        assertTrue(display.matchedAction.contains("Gesture Open Palm 90%"))
+        assertTrue(display.matchedAction.contains("Action Open palm still"))
+        assertTrue(display.handDetails.contains("Hold 200ms"))
+        assertTrue(display.handDetails.contains("Move Still"))
+
+        val diagnostics = GestureInspectorFormatter.formatDiagnostics(
+            snapshot = GestureInspectorSnapshot(
+                activePresetName = "Inspector Demo",
+                frameSet = GestureFrameSet(
+                    timestampMs = 100L,
+                    hands = listOf(interaction.frame),
+                ),
+                interactions = listOf(interaction),
+                actionEvents = listOf(event),
+                lastAction = event,
+            ),
+            inferenceTimeMs = 9L,
+        ).joinToString("\n")
+
+        assertTrue(diagnostics.contains("Top [1. Open Palm 90%"))
+        assertTrue(diagnostics.contains("Binding open-palm-still"))
     }
 
     private fun interaction(): GestureInteraction = GestureInteraction(

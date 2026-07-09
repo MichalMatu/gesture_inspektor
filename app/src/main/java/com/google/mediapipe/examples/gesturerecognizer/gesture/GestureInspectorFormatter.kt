@@ -14,6 +14,23 @@ object GestureInspectorFormatter {
         inferenceTimeMs: Long,
     ): GestureInspectorDisplay {
         val frameStatus = snapshot.frameStatus()
+        val primaryHand = snapshot.interactions.firstOrNull()
+        val action = snapshot.matchedAction?.action?.label
+            ?: snapshot.lastAction?.action?.label
+            ?: "None"
+
+        return GestureInspectorDisplay(
+            summary = "Hands ${snapshot.frameSet.handCount} | $frameStatus | ${inferenceTimeMs}ms",
+            matchedAction = "Gesture ${primaryHand?.gestureLabel() ?: "None"} | Action $action",
+            handDetails = primaryHand?.compactDetails() ?: "Show a hand to inspect gestures",
+        )
+    }
+
+    fun formatDiagnostics(
+        snapshot: GestureInspectorSnapshot,
+        inferenceTimeMs: Long,
+    ): List<String> {
+        val frameStatus = snapshot.frameStatus()
         val matchedAction = snapshot.actionEvents
             .joinToString { event -> "${event.action.label} (${event.bindingId})" }
             .ifEmpty { "None" }
@@ -21,11 +38,18 @@ object GestureInspectorFormatter {
             "${event.action.label} @ ${event.timestampMs}ms"
         } ?: "None"
 
-        return GestureInspectorDisplay(
-            summary = "Preset: ${snapshot.activePresetName} | Frame: ${snapshot.frameSet.timestampMs}ms | Hands: ${snapshot.frameSet.handCount} | Inference: ${inferenceTimeMs}ms | Status: $frameStatus",
-            matchedAction = "Matched action: $matchedAction | Last action: $lastAction",
-            handDetails = snapshot.handDetails(),
-        )
+        return buildList {
+            add(
+                "Preset=${snapshot.activePresetName} Frame=${snapshot.frameSet.timestampMs}ms " +
+                    "Hands=${snapshot.frameSet.handCount} Inference=${inferenceTimeMs}ms " +
+                    "Status=$frameStatus Matched=$matchedAction Last=$lastAction"
+            )
+            if (snapshot.frameSet.hands.isEmpty()) {
+                add("No hands detected")
+            } else {
+                addAll(snapshot.handDiagnostics())
+            }
+        }
     }
 
     private fun GestureInspectorSnapshot.frameStatus(): String = when {
@@ -35,17 +59,11 @@ object GestureInspectorFormatter {
         else -> "tracking"
     }
 
-    private fun GestureInspectorSnapshot.handDetails(): String {
-        if (frameSet.hands.isEmpty()) return "No hands detected"
-
+    private fun GestureInspectorSnapshot.handDiagnostics(): List<String> {
         val eventsByHand = actionEvents.associateBy { event -> event.interaction.handIndex }
-        return interactions.joinToString(separator = "\n") { interaction ->
+        return interactions.map { interaction ->
             val hand = interaction.frame
-            val zone = listOfNotNull(
-                interaction.horizontalZone?.name,
-                interaction.verticalZone?.name,
-            ).joinToString("/")
-                .ifEmpty { "-" }
+            val zone = interaction.zoneLabel()
             val candidates = hand.candidates
                 .take(3)
                 .joinToString { candidate ->
@@ -59,6 +77,18 @@ object GestureInspectorFormatter {
             "Hand ${hand.handIndex} | $handedness $handednessScore | Best ${hand.name} ${hand.score.percent()} | Top [$candidates] | Raw ${interaction.rawCenterX.coord()},${interaction.rawCenterY.coord()} | Smooth ${interaction.smoothedCenterX.coord()},${interaction.smoothedCenterY.coord()} | Zone $zone | Move ${interaction.movementDirection.name} (${interaction.deltaX.coord()},${interaction.deltaY.coord()}) | Stable ${interaction.stableFrames} | Hold ${interaction.holdDurationMs}ms | Moved ${interaction.hasMovedDuringHold} | Binding $bindingId"
         }
     }
+
+    private fun GestureInteraction.compactDetails(): String =
+        "Hold ${holdDurationMs}ms | Move ${movementDirection.name} | Zone ${zoneLabel()}"
+
+    private fun GestureInteraction.gestureLabel(): String =
+        "${frame.bestCandidate?.displayName ?: frame.name} ${frame.score.percent()}"
+
+    private fun GestureInteraction.zoneLabel(): String = listOfNotNull(
+        horizontalZone?.name,
+        verticalZone?.name,
+    ).joinToString("/")
+        .ifEmpty { "-" }
 
     private fun Float.percent(): String = String.format(Locale.US, "%.0f%%", this * 100f)
 

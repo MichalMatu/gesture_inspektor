@@ -18,6 +18,7 @@ package com.google.mediapipe.examples.gesturerecognizer.fragment
 import android.annotation.SuppressLint
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -30,6 +31,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.Navigation
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.mediapipe.examples.gesturerecognizer.GestureRecognizerHelper
 import com.google.mediapipe.examples.gesturerecognizer.MainViewModel
 import com.google.mediapipe.examples.gesturerecognizer.R
@@ -38,7 +40,6 @@ import com.google.mediapipe.examples.gesturerecognizer.databinding.FragmentCamer
 import com.google.mediapipe.examples.gesturerecognizer.gesture.GestureFrameSet
 import com.google.mediapipe.examples.gesturerecognizer.gesture.GestureInspectorFormatter
 import com.google.mediapipe.examples.gesturerecognizer.gesture.GestureInspectorSnapshot
-import com.google.android.material.bottomsheet.BottomSheetBehavior
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -49,6 +50,8 @@ class CameraFragment : Fragment(),
 
     companion object {
         private const val TAG = "Hand gesture recognizer"
+        private const val INSPECTOR_LOG_TAG = "GestureInspector"
+        private const val INSPECTOR_LOG_INTERVAL_MS = 500L
     }
 
     private var _fragmentCameraBinding: FragmentCameraBinding? = null
@@ -68,6 +71,7 @@ class CameraFragment : Fragment(),
     /** Blocking ML operations are performed using this executor */
     private lateinit var backgroundExecutor: ExecutorService
     private lateinit var diagnosticsSheetBehavior: BottomSheetBehavior<View>
+    private var lastInspectorLogAtMs = 0L
 
     override fun onResume() {
         super.onResume()
@@ -411,6 +415,22 @@ class CameraFragment : Fragment(),
         fragmentCameraBinding.inspectorSummaryStatus.text = display.summary
         fragmentCameraBinding.inspectorActionStatus.text = display.matchedAction
         fragmentCameraBinding.inspectorHandStatus.text = display.handDetails
+        logInspectorDiagnostics(snapshot, inferenceTimeMs)
+    }
+
+    private fun logInspectorDiagnostics(
+        snapshot: GestureInspectorSnapshot,
+        inferenceTimeMs: Long,
+    ) {
+        val nowMs = SystemClock.elapsedRealtime()
+        val shouldLog = snapshot.actionEvents.isNotEmpty() ||
+            nowMs - lastInspectorLogAtMs >= INSPECTOR_LOG_INTERVAL_MS
+        if (!shouldLog) return
+
+        lastInspectorLogAtMs = nowMs
+        GestureInspectorFormatter
+            .formatDiagnostics(snapshot, inferenceTimeMs)
+            .forEach { line -> Log.d(INSPECTOR_LOG_TAG, line) }
     }
 
     override fun onError(error: String, errorCode: Int) {

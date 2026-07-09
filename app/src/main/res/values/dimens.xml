@@ -25,12 +25,11 @@
     <dimen name="bottom_sheet_spinner_delegate_min_width">160dp</dimen>
 
     <!-- Gesture Inspector status panel -->
-    <dimen name="inspector_status_margin">12dp</dimen>
-    <dimen name="inspector_status_padding">12dp</dimen>
-    <dimen name="inspector_status_title_text_size">16sp</dimen>
-    <dimen name="inspector_status_text_size">12sp</dimen>
+    <dimen name="inspector_status_margin">8dp</dimen>
+    <dimen name="inspector_status_padding">10dp</dimen>
+    <dimen name="inspector_status_title_text_size">18sp</dimen>
+    <dimen name="inspector_status_text_size">15sp</dimen>
     <dimen name="inspector_status_button_size">40dp</dimen>
-    <dimen name="inspector_status_panel_min_height">168dp</dimen>
 
     <integer name="bottom_sheet_control_text_min_ems">3</integer>
 </resources>

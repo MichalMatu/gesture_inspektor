@@ -39,7 +39,6 @@
         android:layout_margin="@dimen/inspector_status_margin"
         android:background="@drawable/inspector_status_background"
         android:elevation="6dp"
-        android:minHeight="@dimen/inspector_status_panel_min_height"
         android:orientation="vertical"
         android:padding="@dimen/inspector_status_padding">
 
@@ -89,7 +88,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:maxLines="12"
+            android:maxLines="2"
             android:textColor="@color/inspector_status_muted_text"
             android:textSize="@dimen/inspector_status_text_size" />
     </LinearLayout>

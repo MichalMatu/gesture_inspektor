@@ -54,17 +54,20 @@ GestureRecognizerResult
 
 The camera screen shows:
 
-- timestamp, hand count, inference time, active preset,
-- frame status: no hand, tracking, low confidence, stable,
-- matched action and last action,
-- per-hand index, handedness, handedness confidence,
+- hand count, frame status, and inference time,
 - best gesture and confidence,
-- top 3 gesture candidates,
-- raw and smoothed center,
-- horizontal/vertical zones,
-- movement direction and delta,
-- stable frames, hold time, hasMovedDuringHold,
-- matched binding ID.
+- matched action,
+- hold time, movement, zone, and last action.
+
+Full diagnostics are logged to ADB/logcat:
+
+```bash
+adb logcat -s GestureInspector
+```
+
+The log includes frame timestamp, active preset, per-hand handedness, top
+candidates, raw/smoothed center, zones, deltas, stable frames, hold duration,
+movement flags, and matched binding IDs.
 
 ## Supported MediaPipe Gestures
 
