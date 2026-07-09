@@ -30,7 +30,6 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.Navigation
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.mediapipe.examples.gesturerecognizer.GestureRecognizerHelper
 import com.google.mediapipe.examples.gesturerecognizer.MainViewModel
 import com.google.mediapipe.examples.gesturerecognizer.R
@@ -39,6 +38,7 @@ import com.google.mediapipe.examples.gesturerecognizer.databinding.FragmentCamer
 import com.google.mediapipe.examples.gesturerecognizer.gesture.GestureFrameSet
 import com.google.mediapipe.examples.gesturerecognizer.gesture.GestureInspectorFormatter
 import com.google.mediapipe.examples.gesturerecognizer.gesture.GestureInspectorSnapshot
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -59,12 +59,6 @@ class CameraFragment : Fragment(),
     private lateinit var gestureRecognizerHelper: GestureRecognizerHelper
     private lateinit var gestureController: GestureController
     private val viewModel: MainViewModel by activityViewModels()
-    private var defaultNumResults = 1
-    private val gestureRecognizerResultAdapter: GestureRecognizerResultsAdapter by lazy {
-        GestureRecognizerResultsAdapter().apply {
-            updateAdapterSize(defaultNumResults)
-        }
-    }
     private var preview: Preview? = null
     private var imageAnalyzer: ImageAnalysis? = null
     private var camera: Camera? = null
@@ -73,6 +67,7 @@ class CameraFragment : Fragment(),
 
     /** Blocking ML operations are performed using this executor */
     private lateinit var backgroundExecutor: ExecutorService
+    private lateinit var diagnosticsSheetBehavior: BottomSheetBehavior<View>
 
     override fun onResume() {
         super.onResume()
@@ -133,11 +128,6 @@ class CameraFragment : Fragment(),
         super.onViewCreated(view, savedInstanceState)
         gestureController = GestureController()
 
-        with(fragmentCameraBinding.recyclerviewResults) {
-            layoutManager = LinearLayoutManager(requireContext())
-            adapter = gestureRecognizerResultAdapter
-        }
-
         // Initialize our background executor
         backgroundExecutor = Executors.newSingleThreadExecutor()
 
@@ -162,10 +152,25 @@ class CameraFragment : Fragment(),
 
         // Attach listeners to UI control widgets
         initBottomSheetControls()
+        initDiagnosticsSheet()
         updateInspectorStatus(
             snapshot = gestureController.handle(GestureFrameSet.empty()),
             inferenceTimeMs = 0L,
         )
+    }
+
+    private fun initDiagnosticsSheet() {
+        diagnosticsSheetBehavior =
+            BottomSheetBehavior.from(fragmentCameraBinding.bottomSheetLayout.root)
+        diagnosticsSheetBehavior.state = BottomSheetBehavior.STATE_HIDDEN
+        fragmentCameraBinding.diagnosticsToggle.setOnClickListener {
+            diagnosticsSheetBehavior.state =
+                if (diagnosticsSheetBehavior.state == BottomSheetBehavior.STATE_HIDDEN) {
+                    BottomSheetBehavior.STATE_EXPANDED
+                } else {
+                    BottomSheetBehavior.STATE_HIDDEN
+                }
+        }
     }
 
     private fun initBottomSheetControls() {
@@ -370,14 +375,6 @@ class CameraFragment : Fragment(),
             if (_fragmentCameraBinding != null) {
                 // Show result of recognized gesture
                 val recognizerResult = resultBundle.results.first()
-                val gestureCategories = recognizerResult.gestures()
-                if (gestureCategories.isNotEmpty()) {
-                    gestureRecognizerResultAdapter.updateResults(
-                        gestureCategories.first()
-                    )
-                } else {
-                    gestureRecognizerResultAdapter.updateResults(emptyList())
-                }
 
                 fragmentCameraBinding.bottomSheetLayout.inferenceTimeVal.text =
                     String.format("%d ms", resultBundle.inferenceTime)
@@ -419,7 +416,6 @@ class CameraFragment : Fragment(),
     override fun onError(error: String, errorCode: Int) {
         activity?.runOnUiThread {
             Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
-            gestureRecognizerResultAdapter.updateResults(emptyList())
 
             if (errorCode == GestureRecognizerHelper.GPU_ERROR) {
                 fragmentCameraBinding.bottomSheetLayout.spinnerDelegate.setSelection(

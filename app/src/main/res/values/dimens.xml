@@ -29,8 +29,8 @@
     <dimen name="inspector_status_padding">12dp</dimen>
     <dimen name="inspector_status_title_text_size">16sp</dimen>
     <dimen name="inspector_status_text_size">12sp</dimen>
+    <dimen name="inspector_status_button_size">40dp</dimen>
     <dimen name="inspector_status_panel_min_height">168dp</dimen>
-    <dimen name="inspector_results_top_margin">260dp</dimen>
 
     <integer name="bottom_sheet_control_text_min_ems">3</integer>
 </resources>

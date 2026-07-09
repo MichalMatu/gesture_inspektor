@@ -18,6 +18,7 @@
     <string name="app_name">Gesture Inspector</string>
 
     <string name="alt_bottom_sheet_chevron">Bottom sheet expandable indicator</string>
+    <string name="alt_diagnostics_toggle">Toggle diagnostic settings</string>
 
     <string name="alt_bottom_sheet_threshold_button_minus">Decreasing
         threshold of recognized hand gesture results button</string>
