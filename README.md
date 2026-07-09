@@ -65,9 +65,23 @@ Full diagnostics are logged to ADB/logcat:
 adb logcat -s GestureInspector
 ```
 
-The log includes frame timestamp, active preset, per-hand handedness, top
+The default log is intentionally quiet. It reports state changes, action events,
+and a heartbeat about every 2 seconds.
+
+Enable verbose dumps only while debugging low-level recognition data:
+
+```bash
+adb shell setprop log.tag.GestureInspector VERBOSE
+adb logcat -s GestureInspector:V
+```
+
+Verbose logs include frame timestamp, active preset, per-hand handedness, top
 candidates, raw/smoothed center, zones, deltas, stable frames, hold duration,
-movement flags, and matched binding IDs.
+movement flags, and matched binding IDs. Turn verbose mode back down with:
+
+```bash
+adb shell setprop log.tag.GestureInspector INFO
+```
 
 ## Supported MediaPipe Gestures
 
