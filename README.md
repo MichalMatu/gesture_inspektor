@@ -15,7 +15,7 @@ adapters.
 - A gesture oscilloscope for confidence, candidates, hands, zones, movement,
   hold time, stable frames, and matched actions.
 - A neutral mapping layer built around presets and action adapters.
-- A simple XML/ViewBinding app that keeps the original CameraX sample flow.
+- A simple XML/ViewBinding app focused on the live CameraX inspector flow.
 
 ## What It Is Not
 
@@ -36,7 +36,7 @@ MediaPipe sample and should be renamed when this starter becomes a product app.
 gesture/       MediaPipe result model, multi-hand interaction state, smoothing
 control/       GestureAction, GestureBinding, mapper, controller, presets
 demo/dj/       Optional example adapter built on the neutral control layer
-fragment/      Camera/gallery UI from the MediaPipe Android sample
+fragment/      Camera-only UI and permission flow
 ```
 
 Core flow:
@@ -113,18 +113,23 @@ cannot fire multiple actions from that group.
 ./gradlew test
 ```
 
+## Git Hooks
+
+Enable the repository hooks once per checkout:
+
+```bash
+./scripts/install-git-hooks.sh
+```
+
+The pre-commit hook runs `git diff --check --cached`. The pre-push hook runs
+`./gradlew test` and `./gradlew :app:assembleDebug`.
+
 ## Install on a connected phone
 
 ```bash
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell pm grant com.google.mediapipe.examples.gesturerecognizer android.permission.CAMERA
 adb shell am start -n com.google.mediapipe.examples.gesturerecognizer/.MainActivity
-```
-
-## Test on a connected phone
-
-```bash
-./gradlew :app:connectedDebugAndroidTest
 ```
 
 ## Add a Custom Preset

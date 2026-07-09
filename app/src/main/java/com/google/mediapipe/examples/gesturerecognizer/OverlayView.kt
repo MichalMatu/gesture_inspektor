@@ -22,11 +22,9 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
 import androidx.core.content.ContextCompat
-import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.gesturerecognizer.GestureRecognizerResult
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import kotlin.math.max
-import kotlin.math.min
 
 class OverlayView(context: Context?, attrs: AttributeSet?) :
     View(context, attrs) {
@@ -65,21 +63,23 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
         results?.let { gestureRecognizerResult ->
-            for(landmark in gestureRecognizerResult.landmarks()) {
-                for(normalizedLandmark in landmark) {
+            for (landmark in gestureRecognizerResult.landmarks()) {
+                for (normalizedLandmark in landmark) {
                     canvas.drawPoint(
                         normalizedLandmark.x() * imageWidth * scaleFactor,
                         normalizedLandmark.y() * imageHeight * scaleFactor,
-                        pointPaint)
+                        pointPaint
+                    )
                 }
 
-                HandLandmarker.HAND_CONNECTIONS.forEach {
+                HandLandmarker.HAND_CONNECTIONS.forEach { connection ->
                     canvas.drawLine(
-                        gestureRecognizerResult.landmarks().get(0).get(it!!.start()).x() * imageWidth * scaleFactor,
-                        gestureRecognizerResult.landmarks().get(0).get(it.start()).y() * imageHeight * scaleFactor,
-                        gestureRecognizerResult.landmarks().get(0).get(it.end()).x() * imageWidth * scaleFactor,
-                        gestureRecognizerResult.landmarks().get(0).get(it.end()).y() * imageHeight * scaleFactor,
-                        linePaint)
+                        landmark[connection!!.start()].x() * imageWidth * scaleFactor,
+                        landmark[connection.start()].y() * imageHeight * scaleFactor,
+                        landmark[connection.end()].x() * imageWidth * scaleFactor,
+                        landmark[connection.end()].y() * imageHeight * scaleFactor,
+                        linePaint
+                    )
                 }
             }
         }
@@ -89,25 +89,14 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         gestureRecognizerResult: GestureRecognizerResult,
         imageHeight: Int,
         imageWidth: Int,
-        runningMode: RunningMode = RunningMode.IMAGE
     ) {
         results = gestureRecognizerResult
 
         this.imageHeight = imageHeight
         this.imageWidth = imageWidth
 
-        scaleFactor = when (runningMode) {
-            RunningMode.IMAGE,
-            RunningMode.VIDEO -> {
-                min(width * 1f / imageWidth, height * 1f / imageHeight)
-            }
-            RunningMode.LIVE_STREAM -> {
-                // PreviewView is in FILL_START mode. So we need to scale up the
-                // landmarks to match with the size that the captured images will be
-                // displayed.
-                max(width * 1f / imageWidth, height * 1f / imageHeight)
-            }
-        }
+        // PreviewView is in FILL_START mode. Scale landmarks to the displayed camera stream.
+        scaleFactor = max(width * 1f / imageWidth, height * 1f / imageHeight)
         invalidate()
     }
 

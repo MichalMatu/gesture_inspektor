@@ -39,7 +39,6 @@ import com.google.mediapipe.examples.gesturerecognizer.databinding.FragmentCamer
 import com.google.mediapipe.examples.gesturerecognizer.gesture.GestureFrameSet
 import com.google.mediapipe.examples.gesturerecognizer.gesture.GestureInspectorFormatter
 import com.google.mediapipe.examples.gesturerecognizer.gesture.GestureInspectorSnapshot
-import com.google.mediapipe.tasks.vision.core.RunningMode
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -153,7 +152,6 @@ class CameraFragment : Fragment(),
         backgroundExecutor.execute {
             gestureRecognizerHelper = GestureRecognizerHelper(
                 context = requireContext(),
-                runningMode = RunningMode.LIVE_STREAM,
                 minHandDetectionConfidence = viewModel.currentMinHandDetectionConfidence,
                 minHandTrackingConfidence = viewModel.currentMinHandTrackingConfidence,
                 minHandPresenceConfidence = viewModel.currentMinHandPresenceConfidence,
@@ -364,9 +362,7 @@ class CameraFragment : Fragment(),
     }
 
     // Update UI after a hand gesture has been recognized. Extracts original
-    // image height/width to scale and place the landmarks properly through
-    // OverlayView. Only one result is expected at a time. If two or more
-    // hands are seen in the camera frame, only one will be processed.
+    // image height/width to scale and place landmarks through OverlayView.
     override fun onResults(
         resultBundle: GestureRecognizerHelper.ResultBundle
     ) {
@@ -397,8 +393,7 @@ class CameraFragment : Fragment(),
                 fragmentCameraBinding.overlay.setResults(
                     recognizerResult,
                     resultBundle.inputImageHeight,
-                    resultBundle.inputImageWidth,
-                    RunningMode.LIVE_STREAM
+                    resultBundle.inputImageWidth
                 )
 
                 // Force a redraw
