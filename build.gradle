@@ -20,3 +20,9 @@ plugins {
     id 'org.jetbrains.kotlin.android' version '2.1.21' apply false
     id 'de.undercouch.download' version '4.1.2' apply false
 }
+
+tasks.register('qualityCheck') {
+    group = 'verification'
+    description = 'Runs the standard local quality gate: unit tests, Android lint, and debug assembly.'
+    dependsOn ':app:test', ':app:lintDebug', ':app:assembleDebug'
+}

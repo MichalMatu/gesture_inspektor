@@ -26,6 +26,7 @@
         threshold of recognized hand gesture results button</string>
 
     <string name="label_inference_time">Inference Time</string>
+    <string name="label_zero_milliseconds">0ms</string>
     <string name="label_hand_detection_confidence_threshold">Detection
         Threshold</string>
     <string name="label_hand_tracking_confidence_threshold">Tracking

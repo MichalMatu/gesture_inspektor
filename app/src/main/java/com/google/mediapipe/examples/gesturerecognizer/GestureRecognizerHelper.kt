@@ -21,6 +21,7 @@ import android.graphics.Matrix
 import android.os.SystemClock
 import android.util.Log
 import androidx.camera.core.ImageProxy
+import androidx.core.graphics.createBitmap
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.framework.image.MPImage
 import com.google.mediapipe.tasks.core.BaseOptions
@@ -112,7 +113,7 @@ class GestureRecognizerHelper(
         val frameTime = SystemClock.uptimeMillis()
 
         // Copy out RGB bits from the frame to a bitmap buffer
-        val bitmapBuffer = Bitmap.createBitmap(
+        val bitmapBuffer = createBitmap(
             imageProxy.width, imageProxy.height, Bitmap.Config.ARGB_8888
         )
         imageProxy.use { bitmapBuffer.copyPixelsFromBuffer(imageProxy.planes[0].buffer) }

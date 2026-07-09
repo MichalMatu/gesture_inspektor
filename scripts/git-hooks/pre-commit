@@ -3,5 +3,4 @@ set -eu
 
 cd "$(git rev-parse --show-toplevel)"
 
-echo "pre-commit: checking staged diff whitespace"
-git diff --check --cached
+./scripts/check-fast.sh --staged

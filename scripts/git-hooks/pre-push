@@ -3,8 +3,4 @@ set -eu
 
 cd "$(git rev-parse --show-toplevel)"
 
-echo "pre-push: running unit tests"
-./gradlew test
-
-echo "pre-push: building debug APK"
-./gradlew :app:assembleDebug
+./scripts/check-quality.sh

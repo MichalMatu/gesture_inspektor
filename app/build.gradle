@@ -48,6 +48,14 @@ android {
     buildFeatures {
         viewBinding true
     }
+    lint {
+        abortOnError true
+        warningsAsErrors true
+        checkDependencies true
+        htmlReport true
+        lintConfig file('lint.xml')
+        textReport true
+    }
 }
 
 // import DownloadMPTasks task

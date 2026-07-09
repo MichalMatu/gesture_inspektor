@@ -39,6 +39,8 @@ References checked:
 ## Verification Commands
 
 - After Kotlin core changes, run `./gradlew test`.
+- For the full local quality gate, run `./scripts/check-quality.sh` or `./gradlew qualityCheck`.
+- Android Lint is part of the quality gate through `./gradlew :app:lintDebug`.
 - After Android UI, resource, manifest, or Gradle changes, run `./gradlew :app:assembleDebug`.
 - Always run `git diff --check` before considering the work ready.
 - If behavior is phone-facing, install and launch on the connected device with `./gradlew :app:installDebug`, grant camera permission, and start `MainActivity`.

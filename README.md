@@ -130,6 +130,22 @@ cannot fire multiple actions from that group.
 ./gradlew test
 ```
 
+## Quality Checks
+
+Run the full local quality gate:
+
+```bash
+./scripts/check-quality.sh
+```
+
+Equivalent Gradle task:
+
+```bash
+./gradlew qualityCheck
+```
+
+This runs whitespace checks, unit tests, Android Lint, and debug assembly.
+
 ## Git Hooks
 
 Enable the repository hooks once per checkout:
@@ -138,8 +154,8 @@ Enable the repository hooks once per checkout:
 ./scripts/install-git-hooks.sh
 ```
 
-The pre-commit hook runs `git diff --check --cached`. The pre-push hook runs
-`./gradlew test` and `./gradlew :app:assembleDebug`.
+The pre-commit hook runs `./scripts/check-fast.sh --staged`. The pre-push hook
+runs `./scripts/check-quality.sh`.
 
 ## Install on a connected phone
 

@@ -30,7 +30,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.navigation.Navigation
+import androidx.navigation.findNavController
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.mediapipe.examples.gesturerecognizer.GestureRecognizerHelper
 import com.google.mediapipe.examples.gesturerecognizer.MainViewModel
@@ -79,9 +79,9 @@ class CameraFragment : Fragment(),
         // Make sure that all permissions are still present, since the
         // user could have removed them while the app was in paused state.
         if (!PermissionsFragment.hasPermissions(requireContext())) {
-            Navigation.findNavController(
-                requireActivity(), R.id.fragment_container
-            ).navigate(R.id.action_camera_to_permissions)
+            requireActivity()
+                .findNavController(R.id.fragment_container)
+                .navigate(R.id.action_camera_to_permissions)
         }
 
         // Start the GestureRecognizerHelper again when users come back
@@ -382,7 +382,7 @@ class CameraFragment : Fragment(),
                 val recognizerResult = resultBundle.results.first()
 
                 fragmentCameraBinding.bottomSheetLayout.inferenceTimeVal.text =
-                    String.format("%d ms", resultBundle.inferenceTime)
+                    String.format(Locale.US, "%d ms", resultBundle.inferenceTime)
 
                 updateInspectorStatus(
                     snapshot = gestureController.handle(

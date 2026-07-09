@@ -24,7 +24,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.Navigation
+import androidx.navigation.findNavController
 import com.google.mediapipe.examples.gesturerecognizer.R
 
 private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.CAMERA)
@@ -70,12 +70,9 @@ class PermissionsFragment : Fragment() {
 
     private fun navigateToCamera() {
         lifecycleScope.launchWhenStarted {
-            Navigation.findNavController(
-                requireActivity(),
-                R.id.fragment_container
-            ).navigate(
-                R.id.action_permissions_to_camera
-            )
+            requireActivity()
+                .findNavController(R.id.fragment_container)
+                .navigate(R.id.action_permissions_to_camera)
         }
     }
 
