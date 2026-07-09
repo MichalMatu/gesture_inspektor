@@ -5,13 +5,13 @@ import kotlin.math.abs
 enum class HorizontalZone {
     Left,
     Center,
-    Right,
+    Right
 }
 
 enum class VerticalZone {
     Top,
     Middle,
-    Bottom,
+    Bottom
 }
 
 enum class MovementDirection {
@@ -20,7 +20,7 @@ enum class MovementDirection {
     Right,
     Up,
     Down,
-    Any,
+    Any
 }
 
 data class GestureInteraction(
@@ -39,7 +39,7 @@ data class GestureInteraction(
     val movementDirection: MovementDirection,
     val hasMovedDuringHold: Boolean,
     val lostLandmarkFrames: Int,
-    val isTrackingReliable: Boolean,
+    val isTrackingReliable: Boolean
 ) {
     val handIndex: Int
         get() = frame.handIndex
@@ -57,7 +57,7 @@ data class GestureInteraction(
 class GestureInteractionEngine(
     private val minTrackedScore: Float = 0.60f,
     private val movementDeadZone: Float = 0.035f,
-    private val smoothingAlpha: Float = 0.25f,
+    private val smoothingAlpha: Float = 0.25f
 ) {
     private var activeGestureName: String? = null
     private var stableFrames = 0
@@ -67,50 +67,55 @@ class GestureInteractionEngine(
     private var hasMovedDuringHold = false
     private var lostLandmarkFrames = 0
 
-    fun update(frame: HandGestureFrame, timestampMs: Long): GestureInteraction {
-        if (frame.name == GestureFrameSet.NONE || frame.score < minTrackedScore) {
-            reset()
-            return frame.toInteraction(
-                timestampMs = timestampMs,
-                stableFrames = 0,
-                holdDurationMs = 0L,
-                deltaX = 0f,
-                deltaY = 0f,
-                movementDirection = MovementDirection.Still,
-                isTrackingReliable = false,
-            )
-        }
+    fun update(frame: HandGestureFrame, timestampMs: Long): GestureInteraction = when {
+        frame.name == GestureFrameSet.NONE || frame.score < minTrackedScore -> updateUntrackedFrame(frame, timestampMs)
+        activeGestureName != frame.name -> startGestureHold(frame, timestampMs)
+        else -> continueGestureHold(frame, timestampMs)
+    }
 
-        val isSameGesture = activeGestureName == frame.name
-        if (!isSameGesture) {
-            activeGestureName = frame.name
-            stableFrames = 1
-            holdStartedAtMs = timestampMs
-            smoothedCenterX = frame.centerX
-            smoothedCenterY = frame.centerY
-            hasMovedDuringHold = false
-            lostLandmarkFrames = if (frame.centerX == null || frame.centerY == null) 1 else 0
+    private fun updateUntrackedFrame(frame: HandGestureFrame, timestampMs: Long): GestureInteraction {
+        reset()
+        return frame.toInteraction(
+            timestampMs = timestampMs,
+            stableFrames = 0,
+            holdDurationMs = 0L,
+            deltaX = 0f,
+            deltaY = 0f,
+            movementDirection = MovementDirection.Still,
+            isTrackingReliable = false
+        )
+    }
 
-            return frame.toInteraction(
-                timestampMs = timestampMs,
-                stableFrames = stableFrames,
-                holdDurationMs = 0L,
-                deltaX = 0f,
-                deltaY = 0f,
-                movementDirection = MovementDirection.Still,
-                isTrackingReliable = frame.hasReliableLandmarks(),
-            )
-        }
+    private fun startGestureHold(frame: HandGestureFrame, timestampMs: Long): GestureInteraction {
+        activeGestureName = frame.name
+        stableFrames = 1
+        holdStartedAtMs = timestampMs
+        smoothedCenterX = frame.centerX
+        smoothedCenterY = frame.centerY
+        hasMovedDuringHold = false
+        lostLandmarkFrames = if (frame.centerX == null || frame.centerY == null) 1 else 0
 
+        return frame.toInteraction(
+            timestampMs = timestampMs,
+            stableFrames = stableFrames,
+            holdDurationMs = 0L,
+            deltaX = 0f,
+            deltaY = 0f,
+            movementDirection = MovementDirection.Still,
+            isTrackingReliable = frame.hasReliableLandmarks()
+        )
+    }
+
+    private fun continueGestureHold(frame: HandGestureFrame, timestampMs: Long): GestureInteraction {
         stableFrames += 1
 
         val (nextSmoothedCenterX, deltaX) = smoothedDelta(
             current = frame.centerX,
-            previous = smoothedCenterX,
+            previous = smoothedCenterX
         )
         val (nextSmoothedCenterY, deltaY) = smoothedDelta(
             current = frame.centerY,
-            previous = smoothedCenterY,
+            previous = smoothedCenterY
         )
         smoothedCenterX = nextSmoothedCenterX
         smoothedCenterY = nextSmoothedCenterY
@@ -133,7 +138,7 @@ class GestureInteractionEngine(
             deltaX = deltaX,
             deltaY = deltaY,
             movementDirection = movementDirection,
-            isTrackingReliable = frame.hasReliableLandmarks(),
+            isTrackingReliable = frame.hasReliableLandmarks()
         )
     }
 
@@ -147,12 +152,15 @@ class GestureInteractionEngine(
         lostLandmarkFrames = 0
     }
 
-    private fun smoothedDelta(current: Float?, previous: Float?): Pair<Float?, Float> {
-        if (current == null) return null to 0f
-        if (previous == null) return current to 0f
+    private fun smoothedDelta(current: Float?, previous: Float?): Pair<Float?, Float> = when {
+        current == null -> null to 0f
 
-        val smoothed = previous + (current - previous) * smoothingAlpha
-        return smoothed to (smoothed - previous)
+        previous == null -> current to 0f
+
+        else -> {
+            val smoothed = previous + (current - previous) * smoothingAlpha
+            smoothed to (smoothed - previous)
+        }
     }
 
     private fun movementDirection(deltaX: Float, deltaY: Float): MovementDirection {
@@ -176,7 +184,7 @@ class GestureInteractionEngine(
         deltaX: Float,
         deltaY: Float,
         movementDirection: MovementDirection,
-        isTrackingReliable: Boolean,
+        isTrackingReliable: Boolean
     ): GestureInteraction = GestureInteraction(
         frame = this,
         timestampMs = timestampMs,
@@ -193,11 +201,10 @@ class GestureInteractionEngine(
         movementDirection = movementDirection,
         hasMovedDuringHold = hasMovedDuringHold,
         lostLandmarkFrames = lostLandmarkFrames,
-        isTrackingReliable = isTrackingReliable,
+        isTrackingReliable = isTrackingReliable
     )
 
-    private fun HandGestureFrame.hasReliableLandmarks(): Boolean =
-        centerX != null && centerY != null && landmarkCount > 0
+    private fun HandGestureFrame.hasReliableLandmarks(): Boolean = centerX != null && centerY != null && landmarkCount > 0
 
     private fun Float.toHorizontalZone(): HorizontalZone = when {
         this < 0.33f -> HorizontalZone.Left
@@ -212,9 +219,7 @@ class GestureInteractionEngine(
     }
 }
 
-class MultiHandGestureInteractionEngine(
-    private val engineFactory: () -> GestureInteractionEngine = { GestureInteractionEngine() },
-) {
+class MultiHandGestureInteractionEngine(private val engineFactory: () -> GestureInteractionEngine = { GestureInteractionEngine() }) {
     private val enginesByHandIndex = mutableMapOf<Int, GestureInteractionEngine>()
 
     fun update(frameSet: GestureFrameSet): List<GestureInteraction> {

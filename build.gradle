@@ -19,10 +19,39 @@ plugins {
     id 'com.android.library' version '8.11.0' apply false
     id 'org.jetbrains.kotlin.android' version '2.1.21' apply false
     id 'de.undercouch.download' version '4.1.2' apply false
+    id 'com.diffplug.spotless' version '8.8.0'
+    id 'io.gitlab.arturbosch.detekt' version '1.23.8' apply false
+}
+
+spotless {
+    kotlin {
+        target 'app/src/**/*.kt'
+        ktlint('1.8.0')
+            .editorConfigOverride([
+                'ktlint_code_style': 'android_studio',
+                'max_line_length': '140'
+            ])
+    }
+
+    format 'xml', {
+        target 'app/lint.xml', 'app/src/main/**/*.xml'
+        targetExclude '**/build/**'
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+
+    format 'misc', {
+        target '*.gradle', '*.md', '.gitignore', 'gradle.properties',
+            'gradle/wrapper/gradle-wrapper.properties', 'scripts/**/*.sh',
+            '.github/**/*.yml', 'config/**/*.yml'
+        targetExclude '**/build/**'
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }
 
 tasks.register('qualityCheck') {
     group = 'verification'
-    description = 'Runs the standard local quality gate: unit tests, Android lint, and debug assembly.'
-    dependsOn ':app:test', ':app:lintDebug', ':app:assembleDebug'
+    description = 'Runs the standard local quality gate: format checks, static analysis, unit tests, Android lint, and debug assembly.'
+    dependsOn 'spotlessCheck', ':app:detekt', ':app:test', ':app:lintDebug', ':app:assembleDebug'
 }

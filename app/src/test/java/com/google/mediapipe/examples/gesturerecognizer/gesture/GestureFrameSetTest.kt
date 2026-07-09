@@ -15,16 +15,16 @@ class GestureFrameSetTest {
             timestampMs = 123L,
             landmarks = listOf(
                 listOf(landmark(0.20f, 0.30f), landmark(0.40f, 0.50f)),
-                listOf(landmark(0.80f, 0.20f)),
+                listOf(landmark(0.80f, 0.20f))
             ),
             gestures = listOf(
                 listOf(category("Victory", 0.60f), category("Open_Palm", 0.90f)),
-                listOf(category("Thumb_Up", 0.70f)),
+                listOf(category("Thumb_Up", 0.70f))
             ),
             handedness = listOf(
                 listOf(category("Left", 0.80f)),
-                listOf(category("Right", 0.95f)),
-            ),
+                listOf(category("Right", 0.95f))
+            )
         )
 
         val frameSet = GestureFrameSet.fromResult(result)
@@ -59,7 +59,7 @@ class GestureFrameSetTest {
             timestampMs = 50L,
             landmarks = emptyList(),
             gestures = listOf(listOf(category("Closed_Fist", 0.72f))),
-            handedness = emptyList(),
+            handedness = emptyList()
         )
 
         val frameSet = GestureFrameSet.fromResult(result)
@@ -79,17 +79,15 @@ class GestureFrameSetTest {
         assertEquals(0, frameSet.handCount)
     }
 
-    private fun category(name: String, score: Float): Category =
-        Category.create(score, 0, name, "")
+    private fun category(name: String, score: Float): Category = Category.create(score, 0, name, "")
 
-    private fun landmark(x: Float, y: Float): NormalizedLandmark =
-        NormalizedLandmark.create(x, y, 0f)
+    private fun landmark(x: Float, y: Float): NormalizedLandmark = NormalizedLandmark.create(x, y, 0f)
 
     private class FakeGestureRecognizerResult(
         private val timestampMs: Long = 0L,
         private val landmarks: List<List<NormalizedLandmark>> = emptyList(),
         private val gestures: List<List<Category>> = emptyList(),
-        private val handedness: List<List<Category>> = emptyList(),
+        private val handedness: List<List<Category>> = emptyList()
     ) : GestureRecognizerResult() {
         override fun timestampMs(): Long = timestampMs
 

@@ -7,7 +7,7 @@ import com.google.mediapipe.examples.gesturerecognizer.gesture.MultiHandGestureI
 class GestureController(
     private val preset: GesturePreset = InspectorDemoPreset.create(),
     private val interactionEngine: MultiHandGestureInteractionEngine = MultiHandGestureInteractionEngine(),
-    private val actionMapper: GestureActionMapper = GestureActionMapper(preset.bindings),
+    private val actionMapper: GestureActionMapper = GestureActionMapper(preset.bindings)
 ) {
     private var lastAction: GestureActionEvent? = null
 
@@ -21,7 +21,7 @@ class GestureController(
             frameSet = frameSet,
             interactions = mapperResult.interactions,
             actionEvents = mapperResult.actionEvents,
-            lastAction = lastAction,
+            lastAction = lastAction
         )
     }
 

@@ -2,17 +2,10 @@ package com.google.mediapipe.examples.gesturerecognizer.gesture
 
 import java.util.Locale
 
-data class GestureInspectorDisplay(
-    val summary: String,
-    val matchedAction: String,
-    val handDetails: String,
-)
+data class GestureInspectorDisplay(val summary: String, val matchedAction: String, val handDetails: String)
 
 object GestureInspectorFormatter {
-    fun format(
-        snapshot: GestureInspectorSnapshot,
-        inferenceTimeMs: Long,
-    ): GestureInspectorDisplay {
+    fun format(snapshot: GestureInspectorSnapshot, inferenceTimeMs: Long): GestureInspectorDisplay {
         val frameStatus = snapshot.frameStatus()
         val primaryHand = snapshot.interactions.firstOrNull()
         val action = snapshot.matchedAction?.action?.label
@@ -22,14 +15,11 @@ object GestureInspectorFormatter {
         return GestureInspectorDisplay(
             summary = "Hands ${snapshot.frameSet.handCount} | $frameStatus | ${inferenceTimeMs}ms",
             matchedAction = "Gesture ${primaryHand?.gestureLabel() ?: "None"} | Action $action",
-            handDetails = primaryHand?.compactDetails() ?: "Show a hand to inspect gestures",
+            handDetails = primaryHand?.compactDetails() ?: "Show a hand to inspect gestures"
         )
     }
 
-    fun formatDiagnostics(
-        snapshot: GestureInspectorSnapshot,
-        inferenceTimeMs: Long,
-    ): List<String> {
+    fun formatDiagnostics(snapshot: GestureInspectorSnapshot, inferenceTimeMs: Long): List<String> {
         val frameStatus = snapshot.frameStatus()
         val matchedAction = snapshot.actionEvents
             .joinToString { event -> "${event.action.label} (${event.bindingId})" }
@@ -74,19 +64,25 @@ object GestureInspectorFormatter {
             val handednessScore = hand.handednessScore?.percent() ?: "-"
             val bindingId = eventsByHand[hand.handIndex]?.bindingId ?: "-"
 
-            "Hand ${hand.handIndex} | $handedness $handednessScore | Best ${hand.name} ${hand.score.percent()} | Top [$candidates] | Raw ${interaction.rawCenterX.coord()},${interaction.rawCenterY.coord()} | Smooth ${interaction.smoothedCenterX.coord()},${interaction.smoothedCenterY.coord()} | Zone $zone | Move ${interaction.movementDirection.name} (${interaction.deltaX.coord()},${interaction.deltaY.coord()}) | Stable ${interaction.stableFrames} | Hold ${interaction.holdDurationMs}ms | Moved ${interaction.hasMovedDuringHold} | Binding $bindingId"
+            "Hand ${hand.handIndex} | $handedness $handednessScore | " +
+                "Best ${hand.name} ${hand.score.percent()} | Top [$candidates] | " +
+                "Raw ${interaction.rawCenterX.coord()},${interaction.rawCenterY.coord()} | " +
+                "Smooth ${interaction.smoothedCenterX.coord()},${interaction.smoothedCenterY.coord()} | " +
+                "Zone $zone | Move ${interaction.movementDirection.name} " +
+                "(${interaction.deltaX.coord()},${interaction.deltaY.coord()}) | " +
+                "Stable ${interaction.stableFrames} | Hold ${interaction.holdDurationMs}ms | " +
+                "Moved ${interaction.hasMovedDuringHold} | Binding $bindingId"
         }
     }
 
     private fun GestureInteraction.compactDetails(): String =
         "Hold ${holdDurationMs}ms | Move ${movementDirection.name} | Zone ${zoneLabel()}"
 
-    private fun GestureInteraction.gestureLabel(): String =
-        "${frame.bestCandidate?.displayName ?: frame.name} ${frame.score.percent()}"
+    private fun GestureInteraction.gestureLabel(): String = "${frame.bestCandidate?.displayName ?: frame.name} ${frame.score.percent()}"
 
     private fun GestureInteraction.zoneLabel(): String = listOfNotNull(
         horizontalZone?.name,
-        verticalZone?.name,
+        verticalZone?.name
     ).joinToString("/")
         .ifEmpty { "-" }
 

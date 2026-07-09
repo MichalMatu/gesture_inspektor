@@ -60,6 +60,7 @@ class PermissionsFragment : Fragment() {
             ) -> {
                 navigateToCamera()
             }
+
             else -> {
                 requestPermissionLauncher.launch(
                     Manifest.permission.CAMERA

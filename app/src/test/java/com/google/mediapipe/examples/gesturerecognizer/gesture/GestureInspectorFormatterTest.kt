@@ -14,9 +14,9 @@ class GestureInspectorFormatterTest {
                 frameSet = GestureFrameSet.empty(),
                 interactions = emptyList(),
                 actionEvents = emptyList(),
-                lastAction = null,
+                lastAction = null
             ),
-            inferenceTimeMs = 12L,
+            inferenceTimeMs = 12L
         )
 
         assertTrue(display.summary.contains("no hand"))
@@ -31,23 +31,23 @@ class GestureInspectorFormatterTest {
         val event = GestureActionEvent(
             action = GestureAction(
                 id = "action.open_palm_still",
-                label = "Open palm still",
+                label = "Open palm still"
             ),
             bindingId = "open-palm-still",
-            interaction = interaction,
+            interaction = interaction
         )
         val display = GestureInspectorFormatter.format(
             snapshot = GestureInspectorSnapshot(
                 activePresetName = "Inspector Demo",
                 frameSet = GestureFrameSet(
                     timestampMs = 100L,
-                    hands = listOf(interaction.frame),
+                    hands = listOf(interaction.frame)
                 ),
                 interactions = listOf(interaction),
                 actionEvents = listOf(event),
-                lastAction = event,
+                lastAction = event
             ),
-            inferenceTimeMs = 9L,
+            inferenceTimeMs = 9L
         )
 
         assertTrue(display.summary.contains("Hands 1"))
@@ -61,13 +61,13 @@ class GestureInspectorFormatterTest {
                 activePresetName = "Inspector Demo",
                 frameSet = GestureFrameSet(
                     timestampMs = 100L,
-                    hands = listOf(interaction.frame),
+                    hands = listOf(interaction.frame)
                 ),
                 interactions = listOf(interaction),
                 actionEvents = listOf(event),
-                lastAction = event,
+                lastAction = event
             ),
-            inferenceTimeMs = 9L,
+            inferenceTimeMs = 9L
         ).joinToString("\n")
 
         assertTrue(diagnostics.contains("Top [1. Open Palm 90%"))
@@ -82,11 +82,11 @@ class GestureInspectorFormatterTest {
             candidates = listOf(
                 GestureCandidate("Open_Palm", 0.90f, 1),
                 GestureCandidate("Victory", 0.07f, 2),
-                GestureCandidate("Closed_Fist", 0.03f, 3),
+                GestureCandidate("Closed_Fist", 0.03f, 3)
             ),
             centerX = 0.50f,
             centerY = 0.50f,
-            landmarkCount = 21,
+            landmarkCount = 21
         ),
         timestampMs = 100L,
         stableFrames = 3,
@@ -102,6 +102,6 @@ class GestureInspectorFormatterTest {
         movementDirection = MovementDirection.Still,
         hasMovedDuringHold = false,
         lostLandmarkFrames = 0,
-        isTrackingReliable = true,
+        isTrackingReliable = true
     )
 }

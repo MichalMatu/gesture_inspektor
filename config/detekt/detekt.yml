@@ -1,0 +1,40 @@
+config:
+  validation: true
+  warningsAsErrors: false
+
+comments:
+  UndocumentedPublicClass:
+    active: false
+  UndocumentedPublicFunction:
+    active: false
+
+complexity:
+  CyclomaticComplexMethod:
+    threshold: 16
+  LongMethod:
+    threshold: 60
+    excludes:
+      - '**/control/*Preset.kt'
+      - '**/demo/dj/*Preset.kt'
+  LongParameterList:
+    functionThreshold: 14
+    constructorThreshold: 12
+  TooManyFunctions:
+    thresholdInClasses: 20
+
+exceptions:
+  TooGenericExceptionCaught:
+    exceptionNames:
+      - ArrayIndexOutOfBoundsException
+      - Error
+      - Exception
+      - IllegalMonitorStateException
+      - IndexOutOfBoundsException
+      - NullPointerException
+      - Throwable
+
+style:
+  MagicNumber:
+    active: false
+  MaxLineLength:
+    maxLineLength: 140

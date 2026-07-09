@@ -4,11 +4,7 @@ import com.google.mediapipe.tasks.components.containers.Category
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.tasks.vision.gesturerecognizer.GestureRecognizerResult
 
-data class GestureCandidate(
-    val name: String,
-    val score: Float,
-    val rank: Int,
-) {
+data class GestureCandidate(val name: String, val score: Float, val rank: Int) {
     val displayName: String
         get() = name.replace('_', ' ')
 }
@@ -20,7 +16,7 @@ data class HandGestureFrame(
     val candidates: List<GestureCandidate>,
     val centerX: Float?,
     val centerY: Float?,
-    val landmarkCount: Int,
+    val landmarkCount: Int
 ) {
     val bestCandidate: GestureCandidate?
         get() = candidates.firstOrNull()
@@ -32,10 +28,7 @@ data class HandGestureFrame(
         get() = bestCandidate?.score ?: 0f
 }
 
-data class GestureFrameSet(
-    val timestampMs: Long,
-    val hands: List<HandGestureFrame>,
-) {
+data class GestureFrameSet(val timestampMs: Long, val hands: List<HandGestureFrame>) {
     val handCount: Int
         get() = hands.size
 
@@ -44,7 +37,7 @@ data class GestureFrameSet(
 
         fun empty(timestampMs: Long = 0L): GestureFrameSet = GestureFrameSet(
             timestampMs = timestampMs,
-            hands = emptyList(),
+            hands = emptyList()
         )
 
         fun fromResult(result: GestureRecognizerResult): GestureFrameSet {
@@ -54,7 +47,7 @@ data class GestureFrameSet(
             val handCount = maxOf(
                 landmarksByHand.size,
                 gesturesByHand.size,
-                handednessByHand.size,
+                handednessByHand.size
             )
 
             val hands = (0 until handCount).map { handIndex ->
@@ -75,25 +68,24 @@ data class GestureFrameSet(
                         .toCandidates(),
                     centerX = center?.first,
                     centerY = center?.second,
-                    landmarkCount = landmarks.size,
+                    landmarkCount = landmarks.size
                 )
             }
 
             return GestureFrameSet(
                 timestampMs = result.timestampMs(),
-                hands = hands,
+                hands = hands
             )
         }
 
-        private fun List<Category>.toCandidates(): List<GestureCandidate> =
-            sortedByDescending { category -> category.score() }
-                .mapIndexed { index, category ->
-                    GestureCandidate(
-                        name = category.categoryName(),
-                        score = category.score(),
-                        rank = index + 1,
-                    )
-                }
+        private fun List<Category>.toCandidates(): List<GestureCandidate> = sortedByDescending { category -> category.score() }
+            .mapIndexed { index, category ->
+                GestureCandidate(
+                    name = category.categoryName(),
+                    score = category.score(),
+                    rank = index + 1
+                )
+            }
 
         private fun List<NormalizedLandmark>.center(): Pair<Float, Float>? {
             if (isEmpty()) return null

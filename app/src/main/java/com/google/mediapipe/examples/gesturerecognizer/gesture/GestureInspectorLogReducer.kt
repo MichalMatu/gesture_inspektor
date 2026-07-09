@@ -5,58 +5,48 @@ import java.util.Locale
 
 enum class GestureInspectorLogLevel {
     Info,
-    Verbose,
+    Verbose
 }
 
-data class GestureInspectorLogLine(
-    val level: GestureInspectorLogLevel,
-    val message: String,
-)
+data class GestureInspectorLogLine(val level: GestureInspectorLogLevel, val message: String)
 
-class GestureInspectorLogReducer(
-    private val heartbeatIntervalMs: Long = 2_000L,
-    private val verboseIntervalMs: Long = 1_000L,
-) {
+class GestureInspectorLogReducer(private val heartbeatIntervalMs: Long = 2_000L, private val verboseIntervalMs: Long = 1_000L) {
     private var lastState: StateSignature? = null
     private var lastHeartbeatAtMs = Long.MIN_VALUE
     private var lastVerboseAtMs = Long.MIN_VALUE
 
-    fun reduce(
-        snapshot: GestureInspectorSnapshot,
-        inferenceTimeMs: Long,
-        nowMs: Long,
-        verbose: Boolean,
-    ): List<GestureInspectorLogLine> = buildList {
-        val state = snapshot.stateSignature()
+    fun reduce(snapshot: GestureInspectorSnapshot, inferenceTimeMs: Long, nowMs: Long, verbose: Boolean): List<GestureInspectorLogLine> =
+        buildList {
+            val state = snapshot.stateSignature()
 
-        if (state != lastState) {
-            add(GestureInspectorLogLine(GestureInspectorLogLevel.Info, snapshot.stateLine(inferenceTimeMs)))
-            lastState = state
-            lastHeartbeatAtMs = nowMs
-        } else if (lastHeartbeatAtMs == Long.MIN_VALUE || nowMs - lastHeartbeatAtMs >= heartbeatIntervalMs) {
-            add(GestureInspectorLogLine(GestureInspectorLogLevel.Info, snapshot.heartbeatLine(inferenceTimeMs)))
-            lastHeartbeatAtMs = nowMs
+            if (state != lastState) {
+                add(GestureInspectorLogLine(GestureInspectorLogLevel.Info, snapshot.stateLine(inferenceTimeMs)))
+                lastState = state
+                lastHeartbeatAtMs = nowMs
+            } else if (lastHeartbeatAtMs == Long.MIN_VALUE || nowMs - lastHeartbeatAtMs >= heartbeatIntervalMs) {
+                add(GestureInspectorLogLine(GestureInspectorLogLevel.Info, snapshot.heartbeatLine(inferenceTimeMs)))
+                lastHeartbeatAtMs = nowMs
+            }
+
+            snapshot.actionEvents.forEach { event ->
+                add(GestureInspectorLogLine(GestureInspectorLogLevel.Info, event.actionLine()))
+            }
+
+            if (verbose && shouldWriteVerbose(snapshot, nowMs)) {
+                GestureInspectorFormatter
+                    .formatDiagnostics(snapshot, inferenceTimeMs)
+                    .forEach { line ->
+                        add(GestureInspectorLogLine(GestureInspectorLogLevel.Verbose, "VERBOSE $line"))
+                    }
+                lastVerboseAtMs = nowMs
+            }
         }
 
-        snapshot.actionEvents.forEach { event ->
-            add(GestureInspectorLogLine(GestureInspectorLogLevel.Info, event.actionLine()))
-        }
-
-        if (
-            verbose &&
-            (
-                snapshot.actionEvents.isNotEmpty() ||
-                    lastVerboseAtMs == Long.MIN_VALUE ||
-                    nowMs - lastVerboseAtMs >= verboseIntervalMs
-                )
-        ) {
-            GestureInspectorFormatter
-                .formatDiagnostics(snapshot, inferenceTimeMs)
-                .forEach { line ->
-                    add(GestureInspectorLogLine(GestureInspectorLogLevel.Verbose, "VERBOSE $line"))
-                }
-            lastVerboseAtMs = nowMs
-        }
+    private fun shouldWriteVerbose(snapshot: GestureInspectorSnapshot, nowMs: Long): Boolean {
+        val hasActionEvent = snapshot.actionEvents.isNotEmpty()
+        val isFirstVerboseLine = lastVerboseAtMs == Long.MIN_VALUE
+        val intervalElapsed = nowMs - lastVerboseAtMs >= verboseIntervalMs
+        return hasActionEvent || isFirstVerboseLine || intervalElapsed
     }
 
     private fun GestureInspectorSnapshot.stateSignature(): StateSignature {
@@ -66,7 +56,7 @@ class GestureInspectorLogReducer(
             handCount = frameSet.handCount,
             primaryGesture = primary?.gestureName ?: GestureFrameSet.NONE,
             primaryZone = primary?.zoneLabel() ?: "-",
-            primaryMovement = primary?.movementDirection?.name ?: "-",
+            primaryMovement = primary?.movementDirection?.name ?: "-"
         )
     }
 
@@ -98,12 +88,11 @@ class GestureInspectorLogReducer(
         else -> "tracking"
     }
 
-    private fun GestureInteraction.gestureLabel(): String =
-        "${frame.bestCandidate?.displayName ?: frame.name} ${score.percent()}"
+    private fun GestureInteraction.gestureLabel(): String = "${frame.bestCandidate?.displayName ?: frame.name} ${score.percent()}"
 
     private fun GestureInteraction.zoneLabel(): String = listOfNotNull(
         horizontalZone?.name,
-        verticalZone?.name,
+        verticalZone?.name
     ).joinToString("/")
         .ifEmpty { "-" }
 
@@ -114,6 +103,6 @@ class GestureInspectorLogReducer(
         val handCount: Int,
         val primaryGesture: String,
         val primaryZone: String,
-        val primaryMovement: String,
+        val primaryMovement: String
     )
 }

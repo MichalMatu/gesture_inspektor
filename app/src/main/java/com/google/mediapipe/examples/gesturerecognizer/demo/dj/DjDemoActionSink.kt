@@ -5,10 +5,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 class DjDemoActionSink {
-    fun apply(
-        event: GestureActionEvent,
-        state: DjDemoState,
-    ): DjDemoState = when (event.action.id) {
+    fun apply(event: GestureActionEvent, state: DjDemoState): DjDemoState = when (event.action.id) {
         "dj.play_pause" -> state.copy(deckA = state.deckA.copy(isPlaying = !state.deckA.isPlaying))
         "dj.cue" -> state.copy(deckA = state.deckA.copy(cueEnabled = !state.deckA.cueEnabled))
         "dj.volume_up" -> state.copy(deckA = state.deckA.copy(volume = min(100, state.deckA.volume + 5)))

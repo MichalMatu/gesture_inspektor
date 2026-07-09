@@ -18,6 +18,7 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'de.undercouch.download'
+    id 'io.gitlab.arturbosch.detekt'
 }
 
 android {
@@ -55,6 +56,21 @@ android {
         htmlReport true
         lintConfig file('lint.xml')
         textReport true
+    }
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    allRules = false
+    config.setFrom("$rootDir/config/detekt/detekt.yml")
+}
+
+tasks.withType(io.gitlab.arturbosch.detekt.Detekt).configureEach {
+    reports {
+        html.required.set(true)
+        xml.required.set(false)
+        txt.required.set(true)
+        sarif.required.set(true)
     }
 }
 

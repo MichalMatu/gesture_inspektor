@@ -144,7 +144,10 @@ Equivalent Gradle task:
 ./gradlew qualityCheck
 ```
 
-This runs whitespace checks, unit tests, Android Lint, and debug assembly.
+This runs whitespace checks, Spotless/ktlint formatting checks, detekt static
+analysis, unit tests, Android Lint, and debug assembly.
+
+The GitHub Actions workflow runs the same `./gradlew qualityCheck` gate.
 
 ## Git Hooks
 

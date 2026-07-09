@@ -65,6 +65,7 @@ class GestureRecognizerHelper(
             DELEGATE_CPU -> {
                 baseOptionBuilder.setDelegate(Delegate.CPU)
             }
+
             DELEGATE_GPU -> {
                 baseOptionBuilder.setDelegate(Delegate.GPU)
             }
@@ -107,14 +108,14 @@ class GestureRecognizerHelper(
     }
 
     // Convert the ImageProxy to MP Image and feed it to GestureRecognizer.
-    fun recognizeLiveStream(
-        imageProxy: ImageProxy,
-    ) {
+    fun recognizeLiveStream(imageProxy: ImageProxy) {
         val frameTime = SystemClock.uptimeMillis()
 
         // Copy out RGB bits from the frame to a bitmap buffer
         val bitmapBuffer = createBitmap(
-            imageProxy.width, imageProxy.height, Bitmap.Config.ARGB_8888
+            imageProxy.width,
+            imageProxy.height,
+            Bitmap.Config.ARGB_8888
         )
         imageProxy.use { bitmapBuffer.copyPixelsFromBuffer(imageProxy.planes[0].buffer) }
         imageProxy.close()
@@ -125,7 +126,10 @@ class GestureRecognizerHelper(
 
             // flip image since we only support front camera
             postScale(
-                -1f, 1f, imageProxy.width.toFloat(), imageProxy.height.toFloat()
+                -1f,
+                1f,
+                imageProxy.width.toFloat(),
+                imageProxy.height.toFloat()
             )
         }
 
@@ -153,20 +157,19 @@ class GestureRecognizerHelper(
     }
 
     // Return running status of the recognizer helper
-    fun isClosed(): Boolean {
-        return gestureRecognizer == null
-    }
+    fun isClosed(): Boolean = gestureRecognizer == null
 
     // Return the recognition result to the GestureRecognizerHelper's caller
-    private fun returnLivestreamResult(
-        result: GestureRecognizerResult, input: MPImage
-    ) {
+    private fun returnLivestreamResult(result: GestureRecognizerResult, input: MPImage) {
         val finishTimeMs = SystemClock.uptimeMillis()
         val inferenceTime = finishTimeMs - result.timestampMs()
 
         gestureRecognizerListener?.onResults(
             ResultBundle(
-                listOf(result), inferenceTime, input.height, input.width
+                listOf(result),
+                inferenceTime,
+                input.height,
+                input.width
             )
         )
     }
@@ -196,7 +199,7 @@ class GestureRecognizerHelper(
         val results: List<GestureRecognizerResult>,
         val inferenceTime: Long,
         val inputImageHeight: Int,
-        val inputImageWidth: Int,
+        val inputImageWidth: Int
     )
 
     interface GestureRecognizerListener {

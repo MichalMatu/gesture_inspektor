@@ -40,6 +40,9 @@ References checked:
 
 - After Kotlin core changes, run `./gradlew test`.
 - For the full local quality gate, run `./scripts/check-quality.sh` or `./gradlew qualityCheck`.
+- GitHub Actions should use the same `./gradlew qualityCheck` gate as local verification.
+- Spotless with ktlint is the formatting gate. Use `./gradlew spotlessApply` only for mechanical formatting changes.
+- detekt is the Kotlin static analysis gate. Prefer fixing findings over adding suppressions or baselines.
 - Android Lint is part of the quality gate through `./gradlew :app:lintDebug`.
 - After Android UI, resource, manifest, or Gradle changes, run `./gradlew :app:assembleDebug`.
 - Always run `git diff --check` before considering the work ready.

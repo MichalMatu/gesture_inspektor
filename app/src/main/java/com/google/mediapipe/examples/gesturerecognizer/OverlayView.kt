@@ -26,8 +26,7 @@ import com.google.mediapipe.tasks.vision.gesturerecognizer.GestureRecognizerResu
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import kotlin.math.max
 
-class OverlayView(context: Context?, attrs: AttributeSet?) :
-    View(context, attrs) {
+class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs) {
 
     private var results: GestureRecognizerResult? = null
     private var linePaint = Paint()
@@ -85,11 +84,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         }
     }
 
-    fun setResults(
-        gestureRecognizerResult: GestureRecognizerResult,
-        imageHeight: Int,
-        imageWidth: Int,
-    ) {
+    fun setResults(gestureRecognizerResult: GestureRecognizerResult, imageHeight: Int, imageWidth: Int) {
         results = gestureRecognizerResult
 
         this.imageHeight = imageHeight

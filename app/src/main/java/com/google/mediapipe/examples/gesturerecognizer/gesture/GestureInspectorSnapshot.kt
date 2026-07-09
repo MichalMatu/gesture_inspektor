@@ -7,7 +7,7 @@ data class GestureInspectorSnapshot(
     val frameSet: GestureFrameSet,
     val interactions: List<GestureInteraction>,
     val actionEvents: List<GestureActionEvent>,
-    val lastAction: GestureActionEvent?,
+    val lastAction: GestureActionEvent?
 ) {
     val matchedAction: GestureActionEvent?
         get() = actionEvents.firstOrNull()

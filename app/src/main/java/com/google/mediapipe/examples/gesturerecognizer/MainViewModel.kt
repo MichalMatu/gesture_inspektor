@@ -18,37 +18,37 @@ package com.google.mediapipe.examples.gesturerecognizer
 import androidx.lifecycle.ViewModel
 
 class MainViewModel : ViewModel() {
-    private var _delegate: Int = GestureRecognizerHelper.DELEGATE_CPU
-    private var _minHandDetectionConfidence: Float =
+    private var delegate: Int = GestureRecognizerHelper.DELEGATE_CPU
+    private var minHandDetectionConfidence: Float =
         GestureRecognizerHelper.DEFAULT_HAND_DETECTION_CONFIDENCE
-    private var _minHandTrackingConfidence: Float = GestureRecognizerHelper
+    private var minHandTrackingConfidence: Float = GestureRecognizerHelper
         .DEFAULT_HAND_TRACKING_CONFIDENCE
-    private var _minHandPresenceConfidence: Float = GestureRecognizerHelper
+    private var minHandPresenceConfidence: Float = GestureRecognizerHelper
         .DEFAULT_HAND_PRESENCE_CONFIDENCE
-    val currentDelegate: Int get() = _delegate
+    val currentDelegate: Int get() = delegate
     val currentMinHandDetectionConfidence: Float
         get() =
-            _minHandDetectionConfidence
+            minHandDetectionConfidence
     val currentMinHandTrackingConfidence: Float
         get() =
-            _minHandTrackingConfidence
+            minHandTrackingConfidence
     val currentMinHandPresenceConfidence: Float
         get() =
-            _minHandPresenceConfidence
+            minHandPresenceConfidence
 
     fun setDelegate(delegate: Int) {
-        _delegate = delegate
+        this.delegate = delegate
     }
 
     fun setMinHandDetectionConfidence(confidence: Float) {
-        _minHandDetectionConfidence = confidence
+        minHandDetectionConfidence = confidence
     }
 
     fun setMinHandTrackingConfidence(confidence: Float) {
-        _minHandTrackingConfidence = confidence
+        minHandTrackingConfidence = confidence
     }
 
     fun setMinHandPresenceConfidence(confidence: Float) {
-        _minHandPresenceConfidence = confidence
+        minHandPresenceConfidence = confidence
     }
 }

@@ -15,13 +15,13 @@ class GestureActionMapperTest {
     fun oncePerHoldActionFiresOnlyOnceUntilGestureChanges() {
         val mapper = GestureActionMapper(
             bindings = listOf(binding(id = "open-palm", gestureName = "Open_Palm")),
-            stableFramesRequired = 2,
+            stableFramesRequired = 2
         )
 
         assertNull(mapper.nextAction(interaction("Open_Palm", timestampMs = 0L, stableFrames = 1)))
         assertEquals(
             "action.open-palm",
-            mapper.nextAction(interaction("Open_Palm", timestampMs = 33L, stableFrames = 2))?.id,
+            mapper.nextAction(interaction("Open_Palm", timestampMs = 33L, stableFrames = 2))?.id
         )
         assertNull(mapper.nextAction(interaction("Open_Palm", timestampMs = 66L, stableFrames = 3)))
         assertNull(mapper.nextAction(interaction("Open_Palm", timestampMs = 1200L, stableFrames = 4)))
@@ -31,7 +31,7 @@ class GestureActionMapperTest {
         assertNull(mapper.nextAction(interaction("Open_Palm", timestampMs = 1300L, stableFrames = 1)))
         assertEquals(
             "action.open-palm",
-            mapper.nextAction(interaction("Open_Palm", timestampMs = 1333L, stableFrames = 2))?.id,
+            mapper.nextAction(interaction("Open_Palm", timestampMs = 1333L, stableFrames = 2))?.id
         )
     }
 
@@ -43,22 +43,22 @@ class GestureActionMapperTest {
                     id = "thumb-up",
                     gestureName = "Thumb_Up",
                     triggerMode = GestureTriggerMode.RepeatWhileHeld,
-                    repeatIntervalMs = 300L,
+                    repeatIntervalMs = 300L
                 )
             ),
-            stableFramesRequired = 2,
+            stableFramesRequired = 2
         )
 
         assertNull(mapper.nextAction(interaction("Thumb_Up", timestampMs = 0L, stableFrames = 1)))
         assertEquals(
             "action.thumb-up",
-            mapper.nextAction(interaction("Thumb_Up", timestampMs = 50L, stableFrames = 2))?.id,
+            mapper.nextAction(interaction("Thumb_Up", timestampMs = 50L, stableFrames = 2))?.id
         )
         assertNull(mapper.nextAction(interaction("Thumb_Up", timestampMs = 100L, stableFrames = 3)))
         assertNull(mapper.nextAction(interaction("Thumb_Up", timestampMs = 349L, stableFrames = 4)))
         assertEquals(
             "action.thumb-up",
-            mapper.nextAction(interaction("Thumb_Up", timestampMs = 350L, stableFrames = 5))?.id,
+            mapper.nextAction(interaction("Thumb_Up", timestampMs = 350L, stableFrames = 5))?.id
         )
     }
 
@@ -69,7 +69,7 @@ class GestureActionMapperTest {
                 binding(
                     id = "low-priority",
                     gestureName = "ILoveYou",
-                    priority = 1,
+                    priority = 1
                 ),
                 binding(
                     id = "high-priority",
@@ -77,15 +77,15 @@ class GestureActionMapperTest {
                     minScore = 0.80f,
                     minHoldMs = 100L,
                     maxHoldMs = 500L,
-                    priority = 10,
-                ),
+                    priority = 10
+                )
             ),
-            stableFramesRequired = 2,
+            stableFramesRequired = 2
         )
 
         assertEquals(
             "action.low-priority",
-            mapper.nextAction(interaction("ILoveYou", score = 0.70f, holdDurationMs = 200L))?.id,
+            mapper.nextAction(interaction("ILoveYou", score = 0.70f, holdDurationMs = 200L))?.id
         )
 
         val highPriorityMapper = GestureActionMapper(
@@ -97,16 +97,16 @@ class GestureActionMapperTest {
                     minScore = 0.80f,
                     minHoldMs = 100L,
                     maxHoldMs = 500L,
-                    priority = 10,
-                ),
+                    priority = 10
+                )
             ),
-            stableFramesRequired = 2,
+            stableFramesRequired = 2
         )
         assertEquals(
             "action.high-priority",
             highPriorityMapper.nextAction(
                 interaction("ILoveYou", score = 0.90f, holdDurationMs = 200L)
-            )?.id,
+            )?.id
         )
 
         val maxHoldMapper = GestureActionMapper(
@@ -115,10 +115,10 @@ class GestureActionMapperTest {
                     id = "short-hold",
                     gestureName = "ILoveYou",
                     minHoldMs = 50L,
-                    maxHoldMs = 100L,
+                    maxHoldMs = 100L
                 )
             ),
-            stableFramesRequired = 2,
+            stableFramesRequired = 2
         )
         assertNull(maxHoldMapper.nextAction(interaction("ILoveYou", holdDurationMs = 101L)))
     }
@@ -131,10 +131,10 @@ class GestureActionMapperTest {
                     id = "right-still",
                     gestureName = "Open_Palm",
                     requireNoMovementDuringHold = true,
-                    handPreference = HandPreference.Right,
+                    handPreference = HandPreference.Right
                 )
             ),
-            stableFramesRequired = 2,
+            stableFramesRequired = 2
         )
 
         assertNull(
@@ -151,7 +151,7 @@ class GestureActionMapperTest {
             "action.right-still",
             mapper.nextAction(
                 interaction("Open_Palm", hasMovedDuringHold = false, handedness = "Right")
-            )?.id,
+            )?.id
         )
     }
 
@@ -160,9 +160,9 @@ class GestureActionMapperTest {
         val mapper = GestureActionMapper(
             bindings = listOf(
                 binding(id = "first", gestureName = "ILoveYou", priority = 10, exclusiveGroup = "iloveyou"),
-                binding(id = "second", gestureName = "ILoveYou", priority = 1, exclusiveGroup = "iloveyou"),
+                binding(id = "second", gestureName = "ILoveYou", priority = 1, exclusiveGroup = "iloveyou")
             ),
-            stableFramesRequired = 2,
+            stableFramesRequired = 2
         )
 
         assertEquals("action.first", mapper.nextAction(interaction("ILoveYou"))?.id)
@@ -180,7 +180,7 @@ class GestureActionMapperTest {
                     timestampMs = 300L,
                     holdDurationMs = 300L,
                     movementDirection = MovementDirection.Right,
-                    hasMovedDuringHold = true,
+                    hasMovedDuringHold = true
                 )
             )
         ).actionEvents.firstOrNull()
@@ -199,7 +199,7 @@ class GestureActionMapperTest {
                     "Victory",
                     timestampMs = 200L,
                     movementDirection = MovementDirection.Up,
-                    hasMovedDuringHold = true,
+                    hasMovedDuringHold = true
                 )
             )
         ).actionEvents.firstOrNull()
@@ -218,7 +218,7 @@ class GestureActionMapperTest {
                     "ILoveYou",
                     timestampMs = 900L,
                     holdDurationMs = 900L,
-                    verticalZone = VerticalZone.Bottom,
+                    verticalZone = VerticalZone.Bottom
                 )
             )
         ).actionEvents.firstOrNull()
@@ -236,13 +236,13 @@ class GestureActionMapperTest {
             "action.iloveyou_short",
             topMapper.nextAction(
                 interaction("ILoveYou", holdDurationMs = 200L, verticalZone = VerticalZone.Top)
-            )?.id,
+            )?.id
         )
         assertEquals(
             "action.iloveyou_short",
             middleMapper.nextAction(
                 interaction("ILoveYou", holdDurationMs = 200L, verticalZone = VerticalZone.Middle)
-            )?.id,
+            )?.id
         )
     }
 
@@ -258,13 +258,13 @@ class GestureActionMapperTest {
         handPreference: HandPreference = HandPreference.Any,
         priority: Int = 0,
         repeatIntervalMs: Long = 300L,
-        exclusiveGroup: String? = null,
+        exclusiveGroup: String? = null
     ): GestureBinding = GestureBinding(
         id = id,
         gestureName = gestureName,
         action = GestureAction(
             id = "action.$id",
-            label = id,
+            label = id
         ),
         triggerMode = triggerMode,
         minScore = minScore,
@@ -275,7 +275,7 @@ class GestureActionMapperTest {
         handPreference = handPreference,
         priority = priority,
         repeatIntervalMs = repeatIntervalMs,
-        exclusiveGroup = exclusiveGroup,
+        exclusiveGroup = exclusiveGroup
     )
 
     private fun interaction(
@@ -288,7 +288,7 @@ class GestureActionMapperTest {
         hasMovedDuringHold: Boolean = false,
         horizontalZone: HorizontalZone = HorizontalZone.Center,
         verticalZone: VerticalZone = VerticalZone.Middle,
-        handedness: String? = "Right",
+        handedness: String? = "Right"
     ): GestureInteraction = GestureInteraction(
         frame = HandGestureFrame(
             handIndex = 0,
@@ -297,7 +297,7 @@ class GestureActionMapperTest {
             candidates = listOf(GestureCandidate(name, score, 1)),
             centerX = 0.50f,
             centerY = 0.50f,
-            landmarkCount = 21,
+            landmarkCount = 21
         ),
         timestampMs = timestampMs,
         stableFrames = stableFrames,
@@ -313,6 +313,6 @@ class GestureActionMapperTest {
         movementDirection = movementDirection,
         hasMovedDuringHold = hasMovedDuringHold,
         lostLandmarkFrames = 0,
-        isTrackingReliable = true,
+        isTrackingReliable = true
     )
 }

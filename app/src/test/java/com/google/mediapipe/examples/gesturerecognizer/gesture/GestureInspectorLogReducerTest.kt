@@ -29,17 +29,17 @@ class GestureInspectorLogReducerTest {
         val event = GestureActionEvent(
             action = GestureAction(
                 id = "action.open_palm_still",
-                label = "Open palm still",
+                label = "Open palm still"
             ),
             bindingId = "open-palm-still",
-            interaction = interaction,
+            interaction = interaction
         )
 
         val lines = reducer.reduce(
             snapshot = snapshot(interaction = interaction, events = listOf(event), lastAction = event),
             inferenceTimeMs = 10L,
             nowMs = 0L,
-            verbose = false,
+            verbose = false
         )
 
         assertTrue(lines.any { line -> line.message.startsWith("ACTION") })
@@ -74,13 +74,13 @@ class GestureInspectorLogReducerTest {
                         candidates = listOf(GestureCandidate("Closed_Fist", 0.88f, 1)),
                         centerX = 0.50f,
                         centerY = 0.50f,
-                        landmarkCount = 21,
-                    ),
-                ),
+                        landmarkCount = 21
+                    )
+                )
             ),
             inferenceTimeMs = 11L,
             nowMs = 100L,
-            verbose = false,
+            verbose = false
         )
 
         assertEquals(listOf("STATE"), changed.map { it.message.substringBefore(' ') })
@@ -90,16 +90,16 @@ class GestureInspectorLogReducerTest {
     private fun snapshot(
         interaction: GestureInteraction = interaction(),
         events: List<GestureActionEvent> = emptyList(),
-        lastAction: GestureActionEvent? = null,
+        lastAction: GestureActionEvent? = null
     ): GestureInspectorSnapshot = GestureInspectorSnapshot(
         activePresetName = "Inspector Demo",
         frameSet = GestureFrameSet(
             timestampMs = interaction.timestampMs,
-            hands = listOf(interaction.frame),
+            hands = listOf(interaction.frame)
         ),
         interactions = listOf(interaction),
         actionEvents = events,
-        lastAction = lastAction,
+        lastAction = lastAction
     )
 
     private fun interaction(
@@ -110,12 +110,12 @@ class GestureInspectorLogReducerTest {
             candidates = listOf(
                 GestureCandidate("Open_Palm", 0.90f, 1),
                 GestureCandidate("Victory", 0.07f, 2),
-                GestureCandidate("Closed_Fist", 0.03f, 3),
+                GestureCandidate("Closed_Fist", 0.03f, 3)
             ),
             centerX = 0.50f,
             centerY = 0.50f,
-            landmarkCount = 21,
-        ),
+            landmarkCount = 21
+        )
     ): GestureInteraction = GestureInteraction(
         frame = frame,
         timestampMs = 100L,
@@ -132,6 +132,6 @@ class GestureInspectorLogReducerTest {
         movementDirection = MovementDirection.Still,
         hasMovedDuringHold = false,
         lostLandmarkFrames = 0,
-        isTrackingReliable = true,
+        isTrackingReliable = true
     )
 }

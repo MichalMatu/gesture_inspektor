@@ -26,7 +26,7 @@ class GestureInteractionEngineTest {
         engine.update(hand("Open_Palm", centerX = 0.30f, centerY = 0.50f), 0L)
         val interaction = engine.update(
             hand("Open_Palm", centerX = 0.90f, centerY = 0.50f),
-            100L,
+            100L
         )
 
         assertEquals(0.90f, interaction.rawCenterX ?: 0f, 0.001f)
@@ -45,7 +45,7 @@ class GestureInteractionEngineTest {
             hand("Open_Palm", centerX = 0.52f),
             hand("Open_Palm", centerX = 0.48f),
             hand("Open_Palm", centerX = 0.51f),
-            hand("Open_Palm", centerX = 0.49f),
+            hand("Open_Palm", centerX = 0.49f)
         )
 
         frames.forEachIndexed { index, frame ->
@@ -62,11 +62,11 @@ class GestureInteractionEngineTest {
         engine.update(hand("Open_Palm", centerX = 0.20f, centerY = 0.50f), 0L)
         val missingLandmarks = engine.update(
             hand("Open_Palm", centerX = null, centerY = null, landmarkCount = 0),
-            33L,
+            33L
         )
         val landmarksReturned = engine.update(
             hand("Open_Palm", centerX = 0.90f, centerY = 0.50f),
-            66L,
+            66L
         )
 
         assertEquals(MovementDirection.Still, missingLandmarks.movementDirection)
@@ -95,7 +95,7 @@ class GestureInteractionEngineTest {
         score: Float = 0.90f,
         centerX: Float? = 0.50f,
         centerY: Float? = 0.50f,
-        landmarkCount: Int = if (centerX == null || centerY == null) 0 else 21,
+        landmarkCount: Int = if (centerX == null || centerY == null) 0 else 21
     ): HandGestureFrame = HandGestureFrame(
         handIndex = 0,
         handedness = "Right",
@@ -103,6 +103,6 @@ class GestureInteractionEngineTest {
         candidates = listOf(GestureCandidate(name, score, 1)),
         centerX = centerX,
         centerY = centerY,
-        landmarkCount = landmarkCount,
+        landmarkCount = landmarkCount
     )
 }

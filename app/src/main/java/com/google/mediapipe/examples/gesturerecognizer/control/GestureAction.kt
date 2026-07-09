@@ -8,7 +8,7 @@ enum class GestureActionType {
     Increment,
     Decrement,
     SetValue,
-    Reset,
+    Reset
 }
 
 data class GestureAction(
@@ -16,14 +16,10 @@ data class GestureAction(
     val label: String,
     val type: GestureActionType = GestureActionType.Trigger,
     val target: String? = null,
-    val value: Float? = null,
+    val value: Float? = null
 )
 
-data class GestureActionEvent(
-    val action: GestureAction,
-    val bindingId: String,
-    val interaction: GestureInteraction,
-) {
+data class GestureActionEvent(val action: GestureAction, val bindingId: String, val interaction: GestureInteraction) {
     val timestampMs: Long
         get() = interaction.timestampMs
 }
