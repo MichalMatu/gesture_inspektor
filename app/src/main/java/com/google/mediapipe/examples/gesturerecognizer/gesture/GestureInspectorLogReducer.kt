@@ -93,7 +93,7 @@ class GestureInspectorLogReducer(private val heartbeatIntervalMs: Long = 2_000L,
             "zone=${interaction.zoneLabel()} move=${interaction.movementDirection.name}"
     }
 
-    private fun GestureInteraction.gestureLabel(): String = "${frame.bestCandidate?.displayName ?: frame.name} ${score.percent()}"
+    private fun GestureInteraction.gestureLabel(): String = "${frame.displayName} ${score.percent()}"
 
     private fun GestureInteraction.zoneLabel(): String = listOfNotNull(
         horizontalZone?.name,

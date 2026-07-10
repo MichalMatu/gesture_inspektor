@@ -161,6 +161,7 @@ object DjDemoPreset {
             value = if (type == GestureActionType.SetValue) CROSSFADER_CENTER_VALUE else null
         ),
         triggerMode = triggerMode,
+        minScore = if (gestureName == "Victory") MIN_VICTORY_ACTION_SCORE else DEFAULT_ACTION_SCORE,
         movement = movement,
         verticalZones = verticalZones,
         minHoldMs = minHoldMs,
@@ -172,4 +173,6 @@ object DjDemoPreset {
     )
 
     private const val CROSSFADER_CENTER_VALUE = 0.5f
+    private const val DEFAULT_ACTION_SCORE = 0.60f
+    private const val MIN_VICTORY_ACTION_SCORE = 0.70f
 }

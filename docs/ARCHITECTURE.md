@@ -51,6 +51,14 @@ The parser:
   outside the image at its edge;
 - preserves detection index only as per-frame diagnostic data.
 
+For `Pointing_Up`, `Victory`, and `ILoveYou`, a pure-Kotlin geometry classifier
+also evaluates world-landmark joint angles, finger linearity, and reach in a
+palm-relative 3D coordinate system. It is invariant to translation, scale,
+rotation, and mirroring. It overrides the canned model only for a complete,
+non-degenerate 21-point hand with a conservative template score and margin;
+otherwise the original MediaPipe result remains authoritative. Raw candidates
+and per-finger scores stay available in verbose diagnostics.
+
 ## Stable hand identity
 
 `MultiHandGestureInteractionEngine` assigns an internal `trackingId`; it never
@@ -125,6 +133,10 @@ binding cannot fire merely because the winner is in cooldown.
 Binding, action, preset, frame, candidate, and engine constructors validate
 their invariants. Do not catch these `IllegalArgumentException`s around static
 presets; fix the invalid configuration.
+
+The Inspector and DJ demo presets require 70% confidence for `Victory` actions,
+above the generic 60% floor, because transient one-finger and `ILoveYou` poses
+were observed to pass through weak `Victory` predictions.
 
 ## Test layers
 
