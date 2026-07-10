@@ -71,12 +71,14 @@ class GestureInspectorFormatterTest {
         ).joinToString("\n")
 
         assertTrue(diagnostics.contains("Top [1. Open Palm 90%"))
+        assertTrue(diagnostics.contains("Track 0 (detection 0)"))
         assertTrue(diagnostics.contains("Binding open-palm-still"))
     }
 
     private fun interaction(): GestureInteraction = GestureInteraction(
+        trackingId = 0,
         frame = HandGestureFrame(
-            handIndex = 0,
+            detectionIndex = 0,
             handedness = "Right",
             handednessScore = 0.94f,
             candidates = listOf(

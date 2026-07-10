@@ -14,10 +14,23 @@
  * limitations under the License.
  */
 
-task downloadTaskFile(type: Download) {
+def gestureRecognizerModel = file(project.ext.ASSET_DIR + '/gesture_recognizer.task')
+
+tasks.register('downloadTaskFile', Download) {
     src 'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task'
-    dest project.ext.ASSET_DIR + '/gesture_recognizer.task'
+    dest gestureRecognizerModel
     overwrite false
+    retries 3
+    tempAndMove true
 }
 
-preBuild.dependsOn downloadTaskFile
+def verifyTaskFile = tasks.register('verifyTaskFile', Verify) {
+    dependsOn tasks.named('downloadTaskFile')
+    src gestureRecognizerModel
+    algorithm 'SHA-256'
+    checksum '97952348cf6a6a4915c2ea1496b4b37ebabc50cbbf80571435643c455f2b0482'
+}
+
+tasks.named('preBuild').configure {
+    dependsOn verifyTaskFile
+}

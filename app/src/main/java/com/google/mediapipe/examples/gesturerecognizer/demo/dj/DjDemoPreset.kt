@@ -67,7 +67,7 @@ object DjDemoPreset {
                 "dj.crossfader_left",
                 "Open_Palm",
                 "Crossfader Left",
-                GestureTriggerMode.ContinuousWhileHeld,
+                GestureTriggerMode.RepeatWhileHeld,
                 type = GestureActionType.Decrement,
                 movement = MovementDirection.Left,
                 minHoldMs = 300L,
@@ -77,7 +77,7 @@ object DjDemoPreset {
                 "dj.crossfader_right",
                 "Open_Palm",
                 "Crossfader Right",
-                GestureTriggerMode.ContinuousWhileHeld,
+                GestureTriggerMode.RepeatWhileHeld,
                 type = GestureActionType.Increment,
                 movement = MovementDirection.Right,
                 minHoldMs = 300L,
@@ -157,7 +157,8 @@ object DjDemoPreset {
         action = GestureAction(
             id = actionId,
             label = label,
-            type = type
+            type = type,
+            value = if (type == GestureActionType.SetValue) CROSSFADER_CENTER_VALUE else null
         ),
         triggerMode = triggerMode,
         movement = movement,
@@ -169,4 +170,6 @@ object DjDemoPreset {
         priority = priority,
         exclusiveGroup = exclusiveGroup
     )
+
+    private const val CROSSFADER_CENTER_VALUE = 0.5f
 }

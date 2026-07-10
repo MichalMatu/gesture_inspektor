@@ -17,37 +17,43 @@ package com.google.mediapipe.examples.gesturerecognizer.fragment
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
-import android.widget.Toast
+import android.provider.Settings
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
-import androidx.navigation.findNavController
+import androidx.lifecycle.Lifecycle
+import androidx.navigation.fragment.findNavController
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.mediapipe.examples.gesturerecognizer.R
 
 private val PERMISSIONS_REQUIRED = arrayOf(Manifest.permission.CAMERA)
 
 class PermissionsFragment : Fragment() {
+    private var navigateWhenStarted = false
 
     private val requestPermissionLauncher =
         registerForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted: Boolean ->
             if (isGranted) {
-                Toast.makeText(
-                    context,
-                    "Permission request granted",
-                    Toast.LENGTH_LONG
-                ).show()
+                navigateWhenStarted = true
                 navigateToCamera()
             } else {
-                Toast.makeText(
-                    context,
-                    "Permission request denied",
-                    Toast.LENGTH_LONG
-                ).show()
+                showPermissionDeniedDialog()
+            }
+        }
+
+    private val applicationSettingsLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            if (hasPermissions(requireContext())) {
+                navigateWhenStarted = true
+                navigateToCamera()
+            } else {
+                showPermissionDeniedDialog()
             }
         }
 
@@ -58,7 +64,7 @@ class PermissionsFragment : Fragment() {
                 requireContext(),
                 Manifest.permission.CAMERA
             ) -> {
-                navigateToCamera()
+                navigateWhenStarted = true
             }
 
             else -> {
@@ -69,18 +75,62 @@ class PermissionsFragment : Fragment() {
         }
     }
 
-    private fun navigateToCamera() {
-        lifecycleScope.launchWhenStarted {
-            requireActivity()
-                .findNavController(R.id.fragment_container)
-                .navigate(R.id.action_permissions_to_camera)
+    override fun onStart() {
+        super.onStart()
+        if (navigateWhenStarted || hasPermissions(requireContext())) {
+            navigateToCamera()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (hasPermissions(requireContext())) {
+            navigateWhenStarted = true
+            navigateToCamera()
+        }
+    }
+
+    private fun navigateToCamera() {
+        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) return
+
+        val navController = findNavController()
+        if (navController.currentDestination?.id == R.id.permissions_fragment) {
+            navigateWhenStarted = false
+            navController.navigate(R.id.action_permissions_to_camera)
+        }
+    }
+
+    private fun showPermissionDeniedDialog() {
+        if (!isAdded) return
+
+        val canAskAgain = shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.camera_permission_title)
+            .setMessage(R.string.camera_permission_message)
+            .setCancelable(false)
+            .setPositiveButton(if (canAskAgain) R.string.retry else R.string.open_settings) { _, _ ->
+                if (canAskAgain) {
+                    requestPermissionLauncher.launch(Manifest.permission.CAMERA)
+                } else {
+                    openApplicationSettings()
+                }
+            }
+            .setNegativeButton(R.string.close_app) { _, _ -> requireActivity().finish() }
+            .show()
+    }
+
+    private fun openApplicationSettings() {
+        applicationSettingsLauncher.launch(
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", requireContext().packageName, null)
+            )
+        )
     }
 
     companion object {
 
-        /** Convenience method used to check if all permissions required by this app are granted */
-        fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
+        fun hasPermissions(context: Context): Boolean = PERMISSIONS_REQUIRED.all {
             ContextCompat.checkSelfPermission(
                 context,
                 it

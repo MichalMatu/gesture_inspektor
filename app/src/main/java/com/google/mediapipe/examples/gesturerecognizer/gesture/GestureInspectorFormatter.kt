@@ -6,7 +6,7 @@ data class GestureInspectorDisplay(val summary: String, val matchedAction: Strin
 
 object GestureInspectorFormatter {
     fun format(snapshot: GestureInspectorSnapshot, inferenceTimeMs: Long): GestureInspectorDisplay {
-        val frameStatus = snapshot.frameStatus()
+        val frameStatus = snapshot.status.label
         val primaryHand = snapshot.interactions.firstOrNull()
         val action = snapshot.matchedAction?.action?.label
             ?: snapshot.lastAction?.action?.label
@@ -20,7 +20,7 @@ object GestureInspectorFormatter {
     }
 
     fun formatDiagnostics(snapshot: GestureInspectorSnapshot, inferenceTimeMs: Long): List<String> {
-        val frameStatus = snapshot.frameStatus()
+        val frameStatus = snapshot.status.label
         val matchedAction = snapshot.actionEvents
             .joinToString { event -> "${event.action.label} (${event.bindingId})" }
             .ifEmpty { "None" }
@@ -42,15 +42,8 @@ object GestureInspectorFormatter {
         }
     }
 
-    private fun GestureInspectorSnapshot.frameStatus(): String = when {
-        frameSet.hands.isEmpty() -> "no hand"
-        interactions.any { interaction -> interaction.score < 0.60f || interaction.gestureName == GestureFrameSet.NONE } -> "low confidence"
-        interactions.any { interaction -> interaction.stableFrames >= 3 } -> "stable"
-        else -> "tracking"
-    }
-
     private fun GestureInspectorSnapshot.handDiagnostics(): List<String> {
-        val eventsByHand = actionEvents.associateBy { event -> event.interaction.handIndex }
+        val eventsByTrack = actionEvents.associateBy { event -> event.interaction.trackingId }
         return interactions.map { interaction ->
             val hand = interaction.frame
             val zone = interaction.zoneLabel()
@@ -62,16 +55,17 @@ object GestureInspectorFormatter {
                 .ifEmpty { "none" }
             val handedness = hand.handedness ?: "Unknown"
             val handednessScore = hand.handednessScore?.percent() ?: "-"
-            val bindingId = eventsByHand[hand.handIndex]?.bindingId ?: "-"
+            val bindingId = eventsByTrack[interaction.trackingId]?.bindingId ?: "-"
 
-            "Hand ${hand.handIndex} | $handedness $handednessScore | " +
+            "Track ${interaction.trackingId} (detection ${hand.detectionIndex}) | $handedness $handednessScore | " +
                 "Best ${hand.name} ${hand.score.percent()} | Top [$candidates] | " +
                 "Raw ${interaction.rawCenterX.coord()},${interaction.rawCenterY.coord()} | " +
                 "Smooth ${interaction.smoothedCenterX.coord()},${interaction.smoothedCenterY.coord()} | " +
                 "Zone $zone | Move ${interaction.movementDirection.name} " +
                 "(${interaction.deltaX.coord()},${interaction.deltaY.coord()}) | " +
                 "Stable ${interaction.stableFrames} | Hold ${interaction.holdDurationMs}ms | " +
-                "Moved ${interaction.hasMovedDuringHold} | Binding $bindingId"
+                "Moved ${interaction.hasMovedDuringHold} | Reliable ${interaction.isTrackingReliable} | " +
+                "Lost landmarks ${interaction.lostLandmarkFrames} | Binding $bindingId"
         }
     }
 

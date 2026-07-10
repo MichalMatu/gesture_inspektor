@@ -21,7 +21,7 @@ object InspectorDemoPreset {
                 id = "open-palm-left",
                 gestureName = "Open_Palm",
                 action = action("action.open_palm_left", "Open palm left"),
-                triggerMode = GestureTriggerMode.ContinuousWhileHeld,
+                triggerMode = GestureTriggerMode.RepeatWhileHeld,
                 movement = MovementDirection.Left,
                 minHoldMs = 300L,
                 repeatIntervalMs = 90L
@@ -30,7 +30,7 @@ object InspectorDemoPreset {
                 id = "open-palm-right",
                 gestureName = "Open_Palm",
                 action = action("action.open_palm_right", "Open palm right"),
-                triggerMode = GestureTriggerMode.ContinuousWhileHeld,
+                triggerMode = GestureTriggerMode.RepeatWhileHeld,
                 movement = MovementDirection.Right,
                 minHoldMs = 300L,
                 repeatIntervalMs = 90L

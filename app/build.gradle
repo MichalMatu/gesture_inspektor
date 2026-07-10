@@ -23,40 +23,77 @@ plugins {
 }
 
 android {
-    namespace 'com.google.mediapipe.examples.gesturerecognizer'
-    compileSdk 34
+    namespace = 'com.google.mediapipe.examples.gesturerecognizer'
+    compileSdk = 36
 
     defaultConfig {
-        applicationId "com.google.mediapipe.examples.gesturerecognizer"
-        minSdk 24
-        targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        applicationId = "com.google.mediapipe.examples.gesturerecognizer"
+        minSdk = 24
+        targetSdk = 36
+        versionCode = 1
+        versionName = "1.0"
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled = false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
     buildFeatures {
-        viewBinding true
+        viewBinding = true
     }
     lint {
-        abortOnError true
-        warningsAsErrors true
-        checkDependencies true
-        htmlReport true
-        lintConfig file('lint.xml')
-        textReport true
+        abortOnError = true
+        warningsAsErrors = true
+        checkDependencies = true
+        htmlReport = true
+        lintConfig = file('lint.xml')
+        textReport = true
+    }
+}
+
+def allowedPermissions = [
+    'android.permission.CAMERA',
+    'com.google.mediapipe.examples.gesturerecognizer.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
+] as Set
+
+tasks.register('verifyMergedManifestPermissions') {
+    group = 'verification'
+    description = 'Fails when a merged app manifest gains an undeclared permission.'
+    dependsOn 'processDebugMainManifest', 'processReleaseMainManifest'
+
+    def mergedManifests = ['debug', 'release'].collect { variant ->
+        layout.buildDirectory.file(
+            "intermediates/merged_manifest/${variant}/process${variant.capitalize()}MainManifest/AndroidManifest.xml"
+        )
+    }
+    inputs.files(mergedManifests)
+    doLast {
+        mergedManifests.each { manifestProvider ->
+            def manifest = manifestProvider.get().asFile
+            def documentBuilderFactory = javax.xml.parsers.DocumentBuilderFactory.newInstance()
+            documentBuilderFactory.setNamespaceAware(true)
+            def document = documentBuilderFactory.newDocumentBuilder().parse(manifest)
+            def permissionNodes = document.getElementsByTagName('uses-permission')
+            def permissions = (0..<permissionNodes.length).collect { index ->
+                permissionNodes.item(index).getAttributeNS('http://schemas.android.com/apk/res/android', 'name')
+            }.findAll { permission -> !permission.isBlank() }.toSet()
+
+            if (permissions != allowedPermissions) {
+                throw new GradleException(
+                    "Merged permissions changed in ${manifest}. " +
+                        "Expected ${allowedPermissions.sort()}, got ${permissions.sort()}."
+                )
+            }
+        }
     }
 }
 
@@ -100,23 +137,24 @@ kover {
 project.ext.ASSET_DIR = projectDir.toString() + '/src/main/assets'
 
 apply from: 'download_tasks.gradle'
+apply from: 'telemetry_disabled_mediapipe.gradle'
 
 dependencies {
 
     // Kotlin lang
-    implementation 'androidx.core:core-ktx:1.8.0'
+    implementation 'androidx.core:core-ktx:1.17.0'
 
     // App compat and UI things
-    implementation 'androidx.appcompat:appcompat:1.5.1'
-    implementation 'com.google.android.material:material:1.7.0'
-    implementation 'androidx.fragment:fragment-ktx:1.5.4'
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'com.google.android.material:material:1.14.0'
+    implementation 'androidx.fragment:fragment-ktx:1.8.9'
 
     // Navigation library
-    def nav_version = "2.5.3"
+    def nav_version = "2.9.8"
     implementation "androidx.navigation:navigation-fragment-ktx:$nav_version"
 
     // CameraX core library
-    def camerax_version = '1.4.2'
+    def camerax_version = '1.6.1'
     implementation "androidx.camera:camera-core:$camerax_version"
 
     // CameraX Camera2 extensions
@@ -131,6 +169,4 @@ dependencies {
     // Unit testing
     testImplementation 'junit:junit:4.13.2'
 
-    // Mediapipe Library
-    implementation 'com.google.mediapipe:tasks-vision:0.10.29'
 }

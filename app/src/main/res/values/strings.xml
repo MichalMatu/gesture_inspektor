@@ -35,6 +35,13 @@
         Threshold</string>
     <string name="label_delegate">Delegate</string>
     <string name="label_inspector_status">Gesture Inspector</string>
+    <string name="label_camera_unavailable">Camera unavailable</string>
+    <string name="label_camera_retry_hint">Check camera access, then reopen the screen.</string>
+    <string name="camera_permission_title">Camera access required</string>
+    <string name="camera_permission_message">Gesture Inspector processes camera frames locally to recognize hands. Camera access is required.</string>
+    <string name="retry">Retry</string>
+    <string name="open_settings">Open settings</string>
+    <string name="close_app">Close app</string>
 
     <string-array name="delegate_spinner_titles">
         <item>CPU</item>

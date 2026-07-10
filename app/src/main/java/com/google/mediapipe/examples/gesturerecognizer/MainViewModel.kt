@@ -25,30 +25,38 @@ class MainViewModel : ViewModel() {
         .DEFAULT_HAND_TRACKING_CONFIDENCE
     private var minHandPresenceConfidence: Float = GestureRecognizerHelper
         .DEFAULT_HAND_PRESENCE_CONFIDENCE
-    val currentDelegate: Int get() = delegate
+    val currentDelegate: Int
+        get() = delegate
     val currentMinHandDetectionConfidence: Float
-        get() =
-            minHandDetectionConfidence
+        get() = minHandDetectionConfidence
     val currentMinHandTrackingConfidence: Float
-        get() =
-            minHandTrackingConfidence
+        get() = minHandTrackingConfidence
     val currentMinHandPresenceConfidence: Float
-        get() =
-            minHandPresenceConfidence
+        get() = minHandPresenceConfidence
 
     fun setDelegate(delegate: Int) {
+        require(delegate == GestureRecognizerHelper.DELEGATE_CPU || delegate == GestureRecognizerHelper.DELEGATE_GPU) {
+            "Unsupported MediaPipe delegate: $delegate"
+        }
         this.delegate = delegate
     }
 
     fun setMinHandDetectionConfidence(confidence: Float) {
+        requireValidConfidence(confidence)
         minHandDetectionConfidence = confidence
     }
 
     fun setMinHandTrackingConfidence(confidence: Float) {
+        requireValidConfidence(confidence)
         minHandTrackingConfidence = confidence
     }
 
     fun setMinHandPresenceConfidence(confidence: Float) {
+        requireValidConfidence(confidence)
         minHandPresenceConfidence = confidence
+    }
+
+    private fun requireValidConfidence(confidence: Float) {
+        require(confidence.isFinite() && confidence in 0f..1f) { "Confidence threshold must be between 0 and 1." }
     }
 }

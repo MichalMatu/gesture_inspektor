@@ -68,7 +68,7 @@ class GestureInspectorLogReducerTest {
             snapshot = snapshot(
                 interaction = interaction(
                     frame = HandGestureFrame(
-                        handIndex = 0,
+                        detectionIndex = 0,
                         handedness = "Right",
                         handednessScore = 0.94f,
                         candidates = listOf(GestureCandidate("Closed_Fist", 0.88f, 1)),
@@ -85,6 +85,19 @@ class GestureInspectorLogReducerTest {
 
         assertEquals(listOf("STATE"), changed.map { it.message.substringBefore(' ') })
         assertTrue(changed.first().message.contains("gesture=Closed Fist 88%"))
+    }
+
+    @Test
+    fun resetForcesFreshStateLine() {
+        val reducer = GestureInspectorLogReducer()
+        val snapshot = snapshot()
+
+        reducer.reduce(snapshot, inferenceTimeMs = 10L, nowMs = 0L, verbose = false)
+        assertTrue(reducer.reduce(snapshot, inferenceTimeMs = 10L, nowMs = 100L, verbose = false).isEmpty())
+        reducer.reset()
+        val afterReset = reducer.reduce(snapshot, inferenceTimeMs = 10L, nowMs = 100L, verbose = false)
+
+        assertEquals(listOf("STATE"), afterReset.map { line -> line.message.substringBefore(' ') })
     }
 
     private fun snapshot(
@@ -104,7 +117,7 @@ class GestureInspectorLogReducerTest {
 
     private fun interaction(
         frame: HandGestureFrame = HandGestureFrame(
-            handIndex = 0,
+            detectionIndex = 0,
             handedness = "Right",
             handednessScore = 0.94f,
             candidates = listOf(
@@ -117,6 +130,7 @@ class GestureInspectorLogReducerTest {
             landmarkCount = 21
         )
     ): GestureInteraction = GestureInteraction(
+        trackingId = 0,
         frame = frame,
         timestampMs = 100L,
         stableFrames = 3,

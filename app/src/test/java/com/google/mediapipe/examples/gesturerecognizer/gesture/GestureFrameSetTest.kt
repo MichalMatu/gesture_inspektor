@@ -33,7 +33,7 @@ class GestureFrameSetTest {
         assertEquals(2, frameSet.handCount)
 
         val firstHand = frameSet.hands[0]
-        assertEquals(0, firstHand.handIndex)
+        assertEquals(0, firstHand.detectionIndex)
         assertEquals("Left", firstHand.handedness)
         assertEquals(0.80f, firstHand.handednessScore ?: 0f, 0.001f)
         assertEquals("Open_Palm", firstHand.name)
@@ -54,7 +54,7 @@ class GestureFrameSetTest {
     }
 
     @Test
-    fun fromResultKeepsHandsWithMissingGesturesOrLandmarks() {
+    fun fromResultIgnoresClassificationsWithoutLandmarks() {
         val result = FakeGestureRecognizerResult(
             timestampMs = 50L,
             landmarks = emptyList(),
@@ -64,11 +64,38 @@ class GestureFrameSetTest {
 
         val frameSet = GestureFrameSet.fromResult(result)
 
-        assertEquals(1, frameSet.handCount)
-        assertEquals("Closed_Fist", frameSet.hands[0].name)
-        assertNull(frameSet.hands[0].centerX)
-        assertNull(frameSet.hands[0].centerY)
-        assertEquals(0, frameSet.hands[0].landmarkCount)
+        assertEquals(0, frameSet.handCount)
+    }
+
+    @Test
+    fun fromResultIgnoresEmptyLandmarkGroups() {
+        val result = FakeGestureRecognizerResult(
+            landmarks = listOf(emptyList()),
+            gestures = listOf(listOf(category("Closed_Fist", 0.72f)))
+        )
+
+        assertEquals(0, GestureFrameSet.fromResult(result).handCount)
+    }
+
+    @Test
+    fun fromResultRejectsInvalidScoresAndInvalidLandmarks() {
+        val landmarks = MutableList(21) { landmark(0.50f, 0.50f) }
+        landmarks[20] = landmark(Float.NaN, 0.50f)
+        val result = FakeGestureRecognizerResult(
+            landmarks = listOf(landmarks),
+            gestures = listOf(
+                listOf(
+                    category("Invalid", 2f),
+                    category("Open_Palm", 0.80f)
+                )
+            )
+        )
+
+        val hand = GestureFrameSet.fromResult(result).hands.single()
+
+        assertEquals(listOf("Open_Palm"), hand.candidates.map { candidate -> candidate.name })
+        assertNull(hand.centerX)
+        assertNull(hand.centerY)
     }
 
     @Test

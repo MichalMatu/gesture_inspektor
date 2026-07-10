@@ -1,0 +1,24 @@
+Gesture Inspector
+
+Portions of this project are derived from the MediaPipe Gesture Recognizer
+Android sample at https://github.com/google-ai-edge/mediapipe-samples and retain
+copyright notices for The TensorFlow Authors. The exact upstream sample revision
+was not recorded in this repository and should be established before external
+redistribution.
+
+Project-specific modifications and additional code are provided under the
+Apache License, Version 2.0. MediaPipe Android libraries declare Apache-2.0 in
+their published metadata. The build replaces MediaPipe Tasks'
+`TasksStatsLoggerFactory` with a small factory for MediaPipe's bundled
+`TasksStatsDummyLogger`; the surrounding MediaPipe classes retain their
+upstream license and notices.
+
+The build downloads the gesture recognizer model bundle from:
+https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task
+SHA-256: 97952348cf6a6a4915c2ea1496b4b37ebabc50cbbf80571435643c455f2b0482
+Model card:
+https://storage.googleapis.com/mediapipe-assets/gesture_recognizer/model_card_hand_gesture_classification_with_faireness_2022.pdf
+
+The model is not stored in Git, but it is packaged into built APKs. The download
+endpoint and model card do not state complete redistribution terms; confirm the
+applicable upstream model license before distributing an APK.

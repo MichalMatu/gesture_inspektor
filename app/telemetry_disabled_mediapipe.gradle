@@ -1,0 +1,146 @@
+/*
+ * Copyright 2026 Gesture Inspector contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+def mediaPipeVersion = '0.10.35'
+def originalCore = configurations.create('mediaPipeCoreOriginal') {
+    canBeConsumed = false
+    canBeResolved = true
+    transitive = false
+}
+dependencies.add(originalCore.name, "com.google.mediapipe:tasks-core:${mediaPipeVersion}@aar")
+def originalCoreAar = originalCore.elements.map { elements ->
+    if (elements.size() != 1) {
+        throw new GradleException("Expected one MediaPipe core AAR, got ${elements.size()}.")
+    }
+    elements.first().asFile
+}
+
+def extractedCoreDirectory = layout.buildDirectory.dir('intermediates/mediapipe-offline/original-core')
+def extractCoreClasses = tasks.register('extractMediaPipeCoreClasses', Copy) {
+    from(originalCoreAar.map { aar -> zipTree(aar) }) {
+        include 'classes.jar'
+    }
+    into extractedCoreDirectory
+}
+def originalClassesJar = extractedCoreDirectory.map { directory -> directory.file('classes.jar') }
+
+def compileDummyLoggerFactory = tasks.register('compileMediaPipeDummyLoggerFactory', JavaCompile) {
+    dependsOn extractCoreClasses
+    source file('mediapipe-offline/TasksStatsLoggerFactory.java')
+    classpath = files(
+        originalClassesJar,
+        providers.provider {
+            new File(android.sdkDirectory, "platforms/android-${android.compileSdk}/android.jar")
+        }
+    )
+    destinationDirectory.set(layout.buildDirectory.dir('intermediates/mediapipe-offline/dummy-logger-classes'))
+    options.encoding = 'UTF-8'
+    options.release.set(17)
+}
+
+def patchedClassesJar = tasks.register('patchMediaPipeCoreClasses', Zip) {
+    dependsOn compileDummyLoggerFactory
+    // Increment when exclusions or replacement bytecode change so Gradle cannot reuse a stale archive.
+    inputs.property('telemetryPatchRevision', 2)
+    archiveFileName.set('classes.jar')
+    destinationDirectory.set(layout.buildDirectory.dir('intermediates/mediapipe-offline/patched-classes'))
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    from({ zipTree(originalClassesJar.get().asFile) }) {
+        exclude 'com/google/mediapipe/tasks/core/logging/TasksStatsLoggerFactory.class'
+        exclude 'com/google/mediapipe/tasks/core/logging/TasksStatsProtoLogger*.class'
+        exclude 'com/google/mediapipe/tasks/core/logging/RemoteLoggingClient*.class'
+        exclude 'com/google/mediapipe/tasks/core/logging/LoggingClient*.class'
+    }
+    from(compileDummyLoggerFactory.flatMap { task -> task.destinationDirectory })
+}
+
+def patchedCoreAar = tasks.register('patchMediaPipeCoreTelemetry', Zip) {
+    dependsOn patchedClassesJar
+    archiveFileName.set("tasks-core-${mediaPipeVersion}-telemetry-disabled.aar")
+    destinationDirectory.set(layout.buildDirectory.dir('intermediates/mediapipe-offline/patched-aar'))
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    from(originalCoreAar.map { aar -> zipTree(aar) }) {
+        exclude 'classes.jar'
+    }
+    from(patchedClassesJar.flatMap { task -> task.archiveFile }) {
+        rename { 'classes.jar' }
+    }
+}
+
+def patchedCoreFiles = files(patchedCoreAar.flatMap { task -> task.archiveFile }).builtBy(patchedCoreAar)
+dependencies {
+    implementation("com.google.mediapipe:tasks-vision:${mediaPipeVersion}") {
+        exclude group: 'com.google.mediapipe', module: 'tasks-core'
+    }
+    implementation patchedCoreFiles
+
+    // Non-telemetry dependencies declared by tasks-core's published POM.
+    implementation 'com.google.flogger:flogger:0.6'
+    implementation 'com.google.flogger:flogger-system-backend:0.6'
+    implementation 'com.google.guava:guava:27.0.1-android'
+    implementation 'com.google.protobuf:protobuf-javalite:4.26.1'
+}
+
+tasks.register('verifyMediaPipeTelemetryDisabled') {
+    group = 'verification'
+    description = 'Verifies the dummy stats logger and absence of Google DataTransport runtime dependencies.'
+    dependsOn patchedCoreAar
+    inputs.file(patchedCoreAar.flatMap { task -> task.archiveFile })
+
+    doLast {
+        byte[] loggerFactoryBytes = null
+        def forbiddenLoggerEntries = []
+        new java.util.zip.ZipFile(patchedCoreAar.get().archiveFile.get().asFile).withCloseable { aar ->
+            def classesEntry = aar.getEntry('classes.jar')
+            if (classesEntry == null) {
+                throw new GradleException('Patched MediaPipe core does not contain classes.jar.')
+            }
+            new java.util.jar.JarInputStream(aar.getInputStream(classesEntry)).withCloseable { classes ->
+                def entry
+                while ((entry = classes.nextJarEntry) != null) {
+                    if (entry.name.contains('TasksStatsProtoLogger') ||
+                        entry.name.contains('RemoteLoggingClient') ||
+                        entry.name.endsWith('/LoggingClient.class')) {
+                        forbiddenLoggerEntries.add(entry.name)
+                    }
+                    if (entry.name == 'com/google/mediapipe/tasks/core/logging/TasksStatsLoggerFactory.class') {
+                        loggerFactoryBytes = classes.readAllBytes()
+                    }
+                }
+            }
+        }
+
+        if (loggerFactoryBytes == null) {
+            throw new GradleException('Patched MediaPipe core does not contain TasksStatsLoggerFactory.')
+        }
+        if (!forbiddenLoggerEntries.isEmpty()) {
+            throw new GradleException("Remote MediaPipe logger classes remain: ${forbiddenLoggerEntries}")
+        }
+        def classConstants = new String(loggerFactoryBytes, java.nio.charset.StandardCharsets.ISO_8859_1)
+        if (!classConstants.contains('TasksStatsDummyLogger') || classConstants.contains('TasksStatsProtoLogger')) {
+            throw new GradleException('MediaPipe Tasks stats logger is not the expected no-op implementation.')
+        }
+
+        def forbiddenComponents = configurations.debugRuntimeClasspath.incoming.resolutionResult.allComponents.findAll { component ->
+            component.moduleVersion?.group == 'com.google.android.datatransport'
+        }
+        if (!forbiddenComponents.isEmpty()) {
+            throw new GradleException("Google DataTransport remains on the runtime classpath: ${forbiddenComponents*.id}")
+        }
+    }
+}

@@ -5,12 +5,18 @@ import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.tasks.vision.gesturerecognizer.GestureRecognizerResult
 
 data class GestureCandidate(val name: String, val score: Float, val rank: Int) {
+    init {
+        require(name.isNotBlank()) { "Gesture candidate name must not be blank." }
+        require(score.isFinite() && score in 0f..1f) { "Gesture candidate score must be between 0 and 1." }
+        require(rank > 0) { "Gesture candidate rank must be positive." }
+    }
+
     val displayName: String
         get() = name.replace('_', ' ')
 }
 
 data class HandGestureFrame(
-    val handIndex: Int,
+    val detectionIndex: Int,
     val handedness: String?,
     val handednessScore: Float?,
     val candidates: List<GestureCandidate>,
@@ -18,6 +24,24 @@ data class HandGestureFrame(
     val centerY: Float?,
     val landmarkCount: Int
 ) {
+    init {
+        require(detectionIndex >= 0) { "Hand detection index must not be negative." }
+        require(handedness == null || handedness.isNotBlank()) { "Handedness label must not be blank." }
+        require(handednessScore == null || (handednessScore.isFinite() && handednessScore in 0f..1f)) {
+            "Handedness score must be between 0 and 1."
+        }
+        require(centerX == null || (centerX.isFinite() && centerX in 0f..1f)) { "Hand center X must be between 0 and 1." }
+        require(centerY == null || (centerY.isFinite() && centerY in 0f..1f)) { "Hand center Y must be between 0 and 1." }
+        require(landmarkCount >= 0) { "Landmark count must not be negative." }
+        require((centerX == null) == (centerY == null)) { "Hand center coordinates must both be present or both be absent." }
+        require(candidates.map { candidate -> candidate.rank } == (1..candidates.size).toList()) {
+            "Gesture candidate ranks must be sequential and start at 1."
+        }
+        require(candidates.zipWithNext().all { (first, second) -> first.score >= second.score }) {
+            "Gesture candidates must be sorted by descending score."
+        }
+    }
+
     val bestCandidate: GestureCandidate?
         get() = candidates.firstOrNull()
 
@@ -29,6 +53,13 @@ data class HandGestureFrame(
 }
 
 data class GestureFrameSet(val timestampMs: Long, val hands: List<HandGestureFrame>) {
+    init {
+        require(timestampMs >= 0L) { "Frame timestamp must not be negative." }
+        require(hands.map { hand -> hand.detectionIndex }.distinct().size == hands.size) {
+            "Hand detection indexes must be unique within a frame."
+        }
+    }
+
     val handCount: Int
         get() = hands.size
 
@@ -44,22 +75,21 @@ data class GestureFrameSet(val timestampMs: Long, val hands: List<HandGestureFra
             val landmarksByHand = result.landmarks()
             val gesturesByHand = result.gestures()
             val handednessByHand = result.handedness()
-            val handCount = maxOf(
-                landmarksByHand.size,
-                gesturesByHand.size,
-                handednessByHand.size
-            )
 
-            val hands = (0 until handCount).map { handIndex ->
-                val landmarks = landmarksByHand.getOrNull(handIndex).orEmpty()
+            val hands = landmarksByHand.mapIndexedNotNull { handIndex, landmarks ->
+                if (landmarks.isEmpty()) return@mapIndexedNotNull null
+
                 val center = landmarks.center()
                 val handedness = handednessByHand
                     .getOrNull(handIndex)
                     .orEmpty()
+                    .filter { category ->
+                        category.categoryName().isNotBlank() && category.score().isFinite() && category.score() in 0f..1f
+                    }
                     .maxByOrNull { category -> category.score() }
 
                 HandGestureFrame(
-                    handIndex = handIndex,
+                    detectionIndex = handIndex,
                     handedness = handedness?.categoryName(),
                     handednessScore = handedness?.score(),
                     candidates = gesturesByHand
@@ -78,7 +108,11 @@ data class GestureFrameSet(val timestampMs: Long, val hands: List<HandGestureFra
             )
         }
 
-        private fun List<Category>.toCandidates(): List<GestureCandidate> = sortedByDescending { category -> category.score() }
+        private fun List<Category>.toCandidates(): List<GestureCandidate> = asSequence()
+            .filter { category ->
+                category.categoryName().isNotBlank() && category.score().isFinite() && category.score() in 0f..1f
+            }
+            .sortedByDescending { category -> category.score() }
             .mapIndexed { index, category ->
                 GestureCandidate(
                     name = category.categoryName(),
@@ -86,13 +120,25 @@ data class GestureFrameSet(val timestampMs: Long, val hands: List<HandGestureFra
                     rank = index + 1
                 )
             }
+            .toList()
 
         private fun List<NormalizedLandmark>.center(): Pair<Float, Float>? {
-            if (isEmpty()) return null
+            if (isEmpty() || any { landmark -> !landmark.hasFiniteCoordinates() }) {
+                return null
+            }
 
-            val x = sumOf { landmark -> landmark.x().toDouble() }.toFloat() / size
-            val y = sumOf { landmark -> landmark.y().toDouble() }.toFloat() / size
-            return x to y
+            val centerLandmarks = if (size > PALM_LANDMARK_INDEXES.last()) {
+                PALM_LANDMARK_INDEXES.map(::get)
+            } else {
+                this
+            }
+            val x = centerLandmarks.sumOf { landmark -> landmark.x().toDouble() }.toFloat() / centerLandmarks.size
+            val y = centerLandmarks.sumOf { landmark -> landmark.y().toDouble() }.toFloat() / centerLandmarks.size
+            return x.coerceIn(0f, 1f) to y.coerceIn(0f, 1f)
         }
+
+        private fun NormalizedLandmark.hasFiniteCoordinates(): Boolean = x().isFinite() && y().isFinite() && z().isFinite()
+
+        private val PALM_LANDMARK_INDEXES = listOf(0, 5, 9, 13, 17)
     }
 }

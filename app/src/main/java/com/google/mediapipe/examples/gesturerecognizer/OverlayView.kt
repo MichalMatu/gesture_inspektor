@@ -22,11 +22,12 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
 import androidx.core.content.ContextCompat
+import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.tasks.vision.gesturerecognizer.GestureRecognizerResult
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import kotlin.math.max
 
-class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs) {
+class OverlayView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
 
     private var results: GestureRecognizerResult? = null
     private var linePaint = Paint()
@@ -49,8 +50,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
     }
 
     private fun initPaints() {
-        linePaint.color =
-            ContextCompat.getColor(context!!, R.color.mp_color_primary)
+        linePaint.color = ContextCompat.getColor(context, R.color.mp_color_primary)
         linePaint.strokeWidth = LANDMARK_STROKE_WIDTH
         linePaint.style = Paint.Style.STROKE
 
@@ -62,29 +62,42 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
         results?.let { gestureRecognizerResult ->
-            for (landmark in gestureRecognizerResult.landmarks()) {
-                for (normalizedLandmark in landmark) {
-                    canvas.drawPoint(
-                        normalizedLandmark.x() * imageWidth * scaleFactor,
-                        normalizedLandmark.y() * imageHeight * scaleFactor,
-                        pointPaint
-                    )
-                }
-
-                HandLandmarker.HAND_CONNECTIONS.forEach { connection ->
-                    canvas.drawLine(
-                        landmark[connection!!.start()].x() * imageWidth * scaleFactor,
-                        landmark[connection.start()].y() * imageHeight * scaleFactor,
-                        landmark[connection.end()].x() * imageWidth * scaleFactor,
-                        landmark[connection.end()].y() * imageHeight * scaleFactor,
-                        linePaint
-                    )
-                }
-            }
+            gestureRecognizerResult.landmarks().forEach { landmarks -> drawHand(canvas, landmarks) }
         }
     }
 
+    private fun drawHand(canvas: Canvas, landmarks: List<NormalizedLandmark>) {
+        landmarks
+            .filter { landmark -> landmark.isDrawable() }
+            .forEach { landmark ->
+                canvas.drawPoint(
+                    landmark.x() * imageWidth * scaleFactor,
+                    landmark.y() * imageHeight * scaleFactor,
+                    pointPaint
+                )
+            }
+        HandLandmarker.HAND_CONNECTIONS.forEach { connection ->
+            val start = connection?.start() ?: return@forEach
+            drawConnection(canvas, landmarks.getOrNull(start), landmarks.getOrNull(connection.end()))
+        }
+    }
+
+    private fun drawConnection(canvas: Canvas, start: NormalizedLandmark?, end: NormalizedLandmark?) {
+        if (start?.isDrawable() != true || end?.isDrawable() != true) return
+
+        canvas.drawLine(
+            start.x() * imageWidth * scaleFactor,
+            start.y() * imageHeight * scaleFactor,
+            end.x() * imageWidth * scaleFactor,
+            end.y() * imageHeight * scaleFactor,
+            linePaint
+        )
+    }
+
+    private fun NormalizedLandmark.isDrawable(): Boolean = x().isFinite() && y().isFinite()
+
     fun setResults(gestureRecognizerResult: GestureRecognizerResult, imageHeight: Int, imageWidth: Int) {
+        require(imageHeight > 0 && imageWidth > 0) { "Input image dimensions must be positive." }
         results = gestureRecognizerResult
 
         this.imageHeight = imageHeight

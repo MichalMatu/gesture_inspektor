@@ -8,6 +8,7 @@ import com.google.mediapipe.examples.gesturerecognizer.gesture.MovementDirection
 import com.google.mediapipe.examples.gesturerecognizer.gesture.VerticalZone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class GestureActionMapperTest {
@@ -15,7 +16,8 @@ class GestureActionMapperTest {
     fun oncePerHoldActionFiresOnlyOnceUntilGestureChanges() {
         val mapper = GestureActionMapper(
             bindings = listOf(binding(id = "open-palm", gestureName = "Open_Palm")),
-            stableFramesRequired = 2
+            stableFramesRequired = 2,
+            trackStateRetentionMs = 2_000L
         )
 
         assertNull(mapper.nextAction(interaction("Open_Palm", timestampMs = 0L, stableFrames = 1)))
@@ -26,7 +28,10 @@ class GestureActionMapperTest {
         assertNull(mapper.nextAction(interaction("Open_Palm", timestampMs = 66L, stableFrames = 3)))
         assertNull(mapper.nextAction(interaction("Open_Palm", timestampMs = 1200L, stableFrames = 4)))
 
-        mapper.map(listOf(interaction("Closed_Fist", timestampMs = 1233L, stableFrames = 1)))
+        mapper.map(
+            interactions = listOf(interaction("Closed_Fist", timestampMs = 1233L, stableFrames = 1)),
+            timestampMs = 1233L
+        )
 
         assertNull(mapper.nextAction(interaction("Open_Palm", timestampMs = 1300L, stableFrames = 1)))
         assertEquals(
@@ -162,7 +167,8 @@ class GestureActionMapperTest {
                 binding(id = "first", gestureName = "ILoveYou", priority = 10, exclusiveGroup = "iloveyou"),
                 binding(id = "second", gestureName = "ILoveYou", priority = 1, exclusiveGroup = "iloveyou")
             ),
-            stableFramesRequired = 2
+            stableFramesRequired = 2,
+            trackStateRetentionMs = 2_000L
         )
 
         assertEquals("action.first", mapper.nextAction(interaction("ILoveYou"))?.id)
@@ -170,11 +176,148 @@ class GestureActionMapperTest {
     }
 
     @Test
+    fun repeatingExclusiveGroupWinnerCanRepeatButPeerCannotTakeOver() {
+        val mapper = GestureActionMapper(
+            bindings = listOf(
+                binding(
+                    id = "winner",
+                    gestureName = "Open_Palm",
+                    triggerMode = GestureTriggerMode.RepeatWhileHeld,
+                    priority = 10,
+                    repeatIntervalMs = 200L,
+                    exclusiveGroup = "open-palm"
+                ),
+                binding(
+                    id = "peer",
+                    gestureName = "Open_Palm",
+                    triggerMode = GestureTriggerMode.RepeatWhileHeld,
+                    priority = 1,
+                    repeatIntervalMs = 10L,
+                    exclusiveGroup = "open-palm"
+                )
+            )
+        )
+
+        assertEquals("action.winner", mapper.nextAction(interaction("Open_Palm", timestampMs = 100L))?.id)
+        assertNull(mapper.nextAction(interaction("Open_Palm", timestampMs = 150L)))
+        assertEquals("action.winner", mapper.nextAction(interaction("Open_Palm", timestampMs = 300L))?.id)
+    }
+
+    @Test
+    fun repeatingExclusiveGroupWinnerKeepsRepeatingWhenHigherPriorityPeerStartsMatching() {
+        val mapper = GestureActionMapper(
+            bindings = listOf(
+                binding(
+                    id = "later-high-priority",
+                    gestureName = "Open_Palm",
+                    triggerMode = GestureTriggerMode.RepeatWhileHeld,
+                    minHoldMs = 200L,
+                    priority = 10,
+                    repeatIntervalMs = 100L,
+                    exclusiveGroup = "open-palm"
+                ),
+                binding(
+                    id = "initial-winner",
+                    gestureName = "Open_Palm",
+                    triggerMode = GestureTriggerMode.RepeatWhileHeld,
+                    priority = 1,
+                    repeatIntervalMs = 100L,
+                    exclusiveGroup = "open-palm"
+                )
+            )
+        )
+
+        assertEquals(
+            "action.initial-winner",
+            mapper.nextAction(interaction("Open_Palm", timestampMs = 0L, holdDurationMs = 0L))?.id
+        )
+        assertEquals(
+            "action.initial-winner",
+            mapper.nextAction(interaction("Open_Palm", timestampMs = 200L, holdDurationMs = 200L))?.id
+        )
+    }
+
+    @Test
+    fun highPriorityBindingDoesNotFallThroughDuringCooldown() {
+        val mapper = GestureActionMapper(
+            bindings = listOf(
+                binding(
+                    id = "high",
+                    gestureName = "Open_Palm",
+                    triggerMode = GestureTriggerMode.RepeatWhileHeld,
+                    priority = 10,
+                    repeatIntervalMs = 1_000L
+                ),
+                binding(
+                    id = "low",
+                    gestureName = "Open_Palm",
+                    triggerMode = GestureTriggerMode.RepeatWhileHeld,
+                    priority = 1,
+                    repeatIntervalMs = 10L
+                )
+            )
+        )
+
+        assertEquals("action.high", mapper.nextAction(interaction("Open_Palm", timestampMs = 100L))?.id)
+        assertNull(mapper.nextAction(interaction("Open_Palm", timestampMs = 200L)))
+    }
+
+    @Test
+    fun retainedStateExpiresBeforeAReappearingTrackIsMapped() {
+        val mapper = GestureActionMapper(
+            bindings = listOf(binding(id = "open-palm", gestureName = "Open_Palm")),
+            trackStateRetentionMs = 500L
+        )
+
+        assertEquals(
+            "action.open-palm",
+            mapper.nextAction(interaction("Open_Palm", timestampMs = 0L))?.id
+        )
+        assertEquals(
+            "action.open-palm",
+            mapper.nextAction(interaction("Open_Palm", timestampMs = 1_000L))?.id
+        )
+    }
+
+    @Test
+    fun mutableBindingZonesAreSnapshottedAtConstruction() {
+        val zones = mutableSetOf(HorizontalZone.Center)
+        val mapper = GestureActionMapper(
+            listOf(
+                binding(id = "center", gestureName = "Open_Palm").copy(horizontalZones = zones)
+            )
+        )
+        zones.clear()
+
+        assertEquals(
+            "action.center",
+            mapper.nextAction(interaction("Open_Palm", horizontalZone = HorizontalZone.Center))?.id
+        )
+    }
+
+    @Test
+    fun unreliableTrackingNeverTriggersAction() {
+        val mapper = GestureActionMapper(listOf(binding(id = "open-palm", gestureName = "Open_Palm")))
+
+        assertNull(mapper.nextAction(interaction("Open_Palm", isTrackingReliable = false)))
+    }
+
+    @Test
+    fun rejectsDuplicateBindingIds() {
+        val first = binding(id = "duplicate", gestureName = "Open_Palm")
+        val second = binding(id = "duplicate", gestureName = "Victory")
+
+        assertThrows(IllegalArgumentException::class.java) {
+            GestureActionMapper(listOf(first, second))
+        }
+    }
+
+    @Test
     fun inspectorDemoOpenPalmMovingRightDoesNotFireStillAction() {
         val mapper = GestureActionMapper(InspectorDemoPreset.create().bindings)
 
         val event = mapper.map(
-            listOf(
+            interactions = listOf(
                 interaction(
                     "Open_Palm",
                     timestampMs = 300L,
@@ -182,7 +325,8 @@ class GestureActionMapperTest {
                     movementDirection = MovementDirection.Right,
                     hasMovedDuringHold = true
                 )
-            )
+            ),
+            timestampMs = 300L
         ).actionEvents.firstOrNull()
 
         assertEquals("open-palm-right", event?.bindingId)
@@ -194,14 +338,15 @@ class GestureActionMapperTest {
         val mapper = GestureActionMapper(InspectorDemoPreset.create().bindings)
 
         val event = mapper.map(
-            listOf(
+            interactions = listOf(
                 interaction(
                     "Victory",
                     timestampMs = 200L,
                     movementDirection = MovementDirection.Up,
                     hasMovedDuringHold = true
                 )
-            )
+            ),
+            timestampMs = 200L
         ).actionEvents.firstOrNull()
 
         assertEquals("victory-up", event?.bindingId)
@@ -213,14 +358,15 @@ class GestureActionMapperTest {
         val mapper = GestureActionMapper(InspectorDemoPreset.create().bindings)
 
         val event = mapper.map(
-            listOf(
+            interactions = listOf(
                 interaction(
                     "ILoveYou",
                     timestampMs = 900L,
                     holdDurationMs = 900L,
                     verticalZone = VerticalZone.Bottom
                 )
-            )
+            ),
+            timestampMs = 900L
         ).actionEvents.firstOrNull()
 
         assertEquals("i-love-you-bottom-long", event?.bindingId)
@@ -278,6 +424,9 @@ class GestureActionMapperTest {
         exclusiveGroup = exclusiveGroup
     )
 
+    private fun GestureActionMapper.nextAction(interaction: GestureInteraction): GestureAction? =
+        map(listOf(interaction), interaction.timestampMs).actionEvents.firstOrNull()?.action
+
     private fun interaction(
         name: String,
         timestampMs: Long = 100L,
@@ -288,10 +437,13 @@ class GestureActionMapperTest {
         hasMovedDuringHold: Boolean = false,
         horizontalZone: HorizontalZone = HorizontalZone.Center,
         verticalZone: VerticalZone = VerticalZone.Middle,
-        handedness: String? = "Right"
+        handedness: String? = "Right",
+        trackingId: Int = 0,
+        isTrackingReliable: Boolean = true
     ): GestureInteraction = GestureInteraction(
+        trackingId = trackingId,
         frame = HandGestureFrame(
-            handIndex = 0,
+            detectionIndex = 0,
             handedness = handedness,
             handednessScore = 0.90f,
             candidates = listOf(GestureCandidate(name, score, 1)),
@@ -313,6 +465,6 @@ class GestureActionMapperTest {
         movementDirection = movementDirection,
         hasMovedDuringHold = hasMovedDuringHold,
         lostLandmarkFrames = 0,
-        isTrackingReliable = true
+        isTrackingReliable = isTrackingReliable
     )
 }
