@@ -354,6 +354,34 @@ class GestureActionMapperTest {
     }
 
     @Test
+    fun inspectorDemoRejectsWeakTransitionalVictory() {
+        val weakMapper = GestureActionMapper(InspectorDemoPreset.create().bindings)
+        val strongMapper = GestureActionMapper(InspectorDemoPreset.create().bindings)
+
+        assertNull(
+            weakMapper.nextAction(
+                interaction(
+                    "Victory",
+                    score = 0.69f,
+                    movementDirection = MovementDirection.Up,
+                    hasMovedDuringHold = true
+                )
+            )
+        )
+        assertEquals(
+            "action.victory_up",
+            strongMapper.nextAction(
+                interaction(
+                    "Victory",
+                    score = 0.70f,
+                    movementDirection = MovementDirection.Up,
+                    hasMovedDuringHold = true
+                )
+            )?.id
+        )
+    }
+
+    @Test
     fun inspectorDemoILoveYouBottomLongDoesNotFireShortAction() {
         val mapper = GestureActionMapper(InspectorDemoPreset.create().bindings)
 

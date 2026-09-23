@@ -8,13 +8,17 @@ object GestureInspectorFormatter {
     fun format(snapshot: GestureInspectorSnapshot, inferenceTimeMs: Long): GestureInspectorDisplay {
         val frameStatus = snapshot.status.label
         val primaryHand = snapshot.interactions.firstOrNull()
-        val action = snapshot.matchedAction?.action?.label
-            ?: snapshot.lastAction?.action?.label
-            ?: "None"
+        val matchedAction = snapshot.matchedAction
+        val lastAction = snapshot.lastAction
+        val action = when {
+            matchedAction != null -> "Action ${matchedAction.action.label}"
+            lastAction != null -> "Last action ${lastAction.action.label}"
+            else -> "Action None"
+        }
 
         return GestureInspectorDisplay(
             summary = "Hands ${snapshot.frameSet.handCount} | $frameStatus | ${inferenceTimeMs}ms",
-            matchedAction = "Gesture ${primaryHand?.gestureLabel() ?: "None"} | Action $action",
+            matchedAction = "Gesture ${primaryHand?.gestureLabel(snapshot.status) ?: "None"} | $action",
             handDetails = primaryHand?.compactDetails() ?: "Show a hand to inspect gestures"
         )
     }
@@ -56,9 +60,14 @@ object GestureInspectorFormatter {
             val handedness = hand.handedness ?: "Unknown"
             val handednessScore = hand.handednessScore?.percent() ?: "-"
             val bindingId = eventsByTrack[interaction.trackingId]?.bindingId ?: "-"
+            val rawGesture = hand.bestCandidate?.let { candidate ->
+                "${candidate.displayName} ${candidate.score.percent()}"
+            } ?: "None"
+            val landmarkEvidence = hand.landmarkEstimate?.diagnosticLabel() ?: "unavailable"
 
             "Track ${interaction.trackingId} (detection ${hand.detectionIndex}) | $handedness $handednessScore | " +
-                "Best ${hand.name} ${hand.score.percent()} | Top [$candidates] | " +
+                "Resolved ${hand.displayName} ${hand.score.percent()} via ${hand.classificationSource} | " +
+                "Raw $rawGesture | Top [$candidates] | Fingers $landmarkEvidence | " +
                 "Raw ${interaction.rawCenterX.coord()},${interaction.rawCenterY.coord()} | " +
                 "Smooth ${interaction.smoothedCenterX.coord()},${interaction.smoothedCenterY.coord()} | " +
                 "Zone $zone | Move ${interaction.movementDirection.name} " +
@@ -72,7 +81,19 @@ object GestureInspectorFormatter {
     private fun GestureInteraction.compactDetails(): String =
         "Hold ${holdDurationMs}ms | Move ${movementDirection.name} | Zone ${zoneLabel()}"
 
-    private fun GestureInteraction.gestureLabel(): String = "${frame.bestCandidate?.displayName ?: frame.name} ${frame.score.percent()}"
+    private fun GestureInteraction.gestureLabel(status: GestureInspectorStatus): String =
+        if (status == GestureInspectorStatus.LowConfidence) {
+            val raw = frame.bestCandidate?.let { candidate ->
+                "${candidate.displayName} ${candidate.score.percent()}"
+            } ?: "None"
+            "Uncertain (raw $raw)"
+        } else {
+            "${frame.displayName} ${score.percent()}"
+        }
+
+    private fun LandmarkGestureEstimate.diagnosticLabel(): String =
+        "T=${fingers.thumb.percent()} I=${fingers.index.percent()} M=${fingers.middle.percent()} " +
+            "R=${fingers.ring.percent()} P=${fingers.pinky.percent()} margin=${margin.percent()}"
 
     private fun GestureInteraction.zoneLabel(): String = listOfNotNull(
         horizontalZone?.name,

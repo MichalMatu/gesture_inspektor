@@ -1,6 +1,7 @@
 package com.google.mediapipe.examples.gesturerecognizer.gesture
 
 import com.google.mediapipe.tasks.components.containers.Category
+import com.google.mediapipe.tasks.components.containers.Landmark
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.tasks.vision.gesturerecognizer.GestureRecognizerResult
 
@@ -22,7 +23,8 @@ data class HandGestureFrame(
     val candidates: List<GestureCandidate>,
     val centerX: Float?,
     val centerY: Float?,
-    val landmarkCount: Int
+    val landmarkCount: Int,
+    val landmarkEstimate: LandmarkGestureEstimate? = null
 ) {
     init {
         require(detectionIndex >= 0) { "Hand detection index must not be negative." }
@@ -33,6 +35,9 @@ data class HandGestureFrame(
         require(centerX == null || (centerX.isFinite() && centerX in 0f..1f)) { "Hand center X must be between 0 and 1." }
         require(centerY == null || (centerY.isFinite() && centerY in 0f..1f)) { "Hand center Y must be between 0 and 1." }
         require(landmarkCount >= 0) { "Landmark count must not be negative." }
+        require(landmarkEstimate == null || landmarkCount >= 21) {
+            "A landmark gesture estimate requires a complete hand landmark set."
+        }
         require((centerX == null) == (centerY == null)) { "Hand center coordinates must both be present or both be absent." }
         require(candidates.map { candidate -> candidate.rank } == (1..candidates.size).toList()) {
             "Gesture candidate ranks must be sequential and start at 1."
@@ -46,10 +51,20 @@ data class HandGestureFrame(
         get() = candidates.firstOrNull()
 
     val name: String
-        get() = bestCandidate?.name ?: GestureFrameSet.NONE
+        get() = landmarkEstimate?.resolvedName ?: bestCandidate?.name ?: GestureFrameSet.NONE
 
     val score: Float
-        get() = bestCandidate?.score ?: 0f
+        get() = if (landmarkEstimate?.resolvedName != null) landmarkEstimate.score else bestCandidate?.score ?: 0f
+
+    val displayName: String
+        get() = name.replace('_', ' ')
+
+    val classificationSource: String
+        get() = when {
+            landmarkEstimate?.resolvedName != null -> "landmarks"
+            bestCandidate != null -> "model"
+            else -> "none"
+        }
 }
 
 data class GestureFrameSet(val timestampMs: Long, val hands: List<HandGestureFrame>) {
@@ -73,6 +88,7 @@ data class GestureFrameSet(val timestampMs: Long, val hands: List<HandGestureFra
 
         fun fromResult(result: GestureRecognizerResult): GestureFrameSet {
             val landmarksByHand = result.landmarks()
+            val worldLandmarksByHand = result.worldLandmarks()
             val gesturesByHand = result.gestures()
             val handednessByHand = result.handedness()
 
@@ -98,7 +114,12 @@ data class GestureFrameSet(val timestampMs: Long, val hands: List<HandGestureFra
                         .toCandidates(),
                     centerX = center?.first,
                     centerY = center?.second,
-                    landmarkCount = landmarks.size
+                    landmarkCount = landmarks.size,
+                    landmarkEstimate = worldLandmarksByHand
+                        .getOrNull(handIndex)
+                        .orEmpty()
+                        .toGestureLandmarks()
+                        .let(LandmarkGestureClassifier::estimate)
                 )
             }
 
@@ -138,6 +159,10 @@ data class GestureFrameSet(val timestampMs: Long, val hands: List<HandGestureFra
         }
 
         private fun NormalizedLandmark.hasFiniteCoordinates(): Boolean = x().isFinite() && y().isFinite() && z().isFinite()
+
+        private fun List<Landmark>.toGestureLandmarks(): List<GestureLandmark3D> = map { landmark ->
+            GestureLandmark3D(landmark.x(), landmark.y(), landmark.z())
+        }
 
         private val PALM_LANDMARK_INDEXES = listOf(0, 5, 9, 13, 17)
     }

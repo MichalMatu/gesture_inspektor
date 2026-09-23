@@ -75,14 +75,38 @@ class GestureInspectorFormatterTest {
         assertTrue(diagnostics.contains("Binding open-palm-still"))
     }
 
-    private fun interaction(): GestureInteraction = GestureInteraction(
+    @Test
+    fun distinguishesUncertainGestureAndPreviousAction() {
+        val lowConfidence = interaction(score = 0.40f, stableFrames = 0)
+        val previousInteraction = interaction()
+        val previousEvent = GestureActionEvent(
+            action = GestureAction("action.victory", "Victory still"),
+            bindingId = "victory-still",
+            interaction = previousInteraction
+        )
+        val display = GestureInspectorFormatter.format(
+            snapshot = GestureInspectorSnapshot(
+                activePresetName = "Inspector Demo",
+                frameSet = GestureFrameSet(100L, listOf(lowConfidence.frame)),
+                interactions = listOf(lowConfidence),
+                actionEvents = emptyList(),
+                lastAction = previousEvent
+            ),
+            inferenceTimeMs = 9L
+        )
+
+        assertTrue(display.matchedAction.contains("Gesture Uncertain (raw Open Palm 40%)"))
+        assertTrue(display.matchedAction.contains("Last action Victory still"))
+    }
+
+    private fun interaction(score: Float = 0.90f, stableFrames: Int = 3): GestureInteraction = GestureInteraction(
         trackingId = 0,
         frame = HandGestureFrame(
             detectionIndex = 0,
             handedness = "Right",
             handednessScore = 0.94f,
             candidates = listOf(
-                GestureCandidate("Open_Palm", 0.90f, 1),
+                GestureCandidate("Open_Palm", score, 1),
                 GestureCandidate("Victory", 0.07f, 2),
                 GestureCandidate("Closed_Fist", 0.03f, 3)
             ),
@@ -91,7 +115,7 @@ class GestureInspectorFormatterTest {
             landmarkCount = 21
         ),
         timestampMs = 100L,
-        stableFrames = 3,
+        stableFrames = stableFrames,
         holdDurationMs = 200L,
         rawCenterX = 0.50f,
         rawCenterY = 0.50f,

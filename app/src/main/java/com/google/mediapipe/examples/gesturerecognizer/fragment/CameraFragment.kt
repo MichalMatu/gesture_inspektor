@@ -22,6 +22,7 @@ import android.os.SystemClock
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.OrientationEventListener
+import android.view.Surface
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
@@ -83,6 +84,7 @@ class CameraFragment :
     private var cameraProvider: ProcessCameraProvider? = null
     private val cameraFacing = CameraSelector.LENS_FACING_FRONT
     private var orientationEventListener: OrientationEventListener? = null
+    private var targetRotation = Surface.ROTATION_0
 
     /** Blocking ML operations are performed using this executor */
     private lateinit var backgroundExecutor: ExecutorService
@@ -101,8 +103,11 @@ class CameraFragment :
         }
 
         acceptsRecognitionResults = true
+        _fragmentCameraBinding?.let { binding ->
+            targetRotation = binding.viewFinder.display?.rotation ?: targetRotation
+            binding.updateTargetRotation(preview, imageAnalyzer, targetRotation)
+        }
         orientationEventListener?.enable()
-        _fragmentCameraBinding?.updateTargetRotation(preview, imageAnalyzer)
         // Start the GestureRecognizerHelper again when users come back
         // to the foreground.
         if (this::backgroundExecutor.isInitialized && !backgroundExecutor.isShutdown) {
@@ -169,10 +174,14 @@ class CameraFragment :
         // Initialize our background executor
         backgroundExecutor = Executors.newSingleThreadExecutor()
         fragmentCameraBinding.setRecognizerControlsEnabled(false)
+        targetRotation = fragmentCameraBinding.viewFinder.display?.rotation ?: Surface.ROTATION_0
         orientationEventListener = object : OrientationEventListener(requireContext()) {
             override fun onOrientationChanged(orientation: Int) {
-                if (orientation != ORIENTATION_UNKNOWN) {
-                    _fragmentCameraBinding?.updateTargetRotation(preview, imageAnalyzer)
+                orientation.toSurfaceRotation()?.let { rotation ->
+                    if (rotation != targetRotation) {
+                        targetRotation = rotation
+                        _fragmentCameraBinding?.updateTargetRotation(preview, imageAnalyzer, rotation)
+                    }
                 }
             }
         }
@@ -365,13 +374,13 @@ class CameraFragment :
 
         // Prefer 4:3 because it is closest to the gesture model input shape.
         preview = Preview.Builder().setResolutionSelector(resolutionSelector)
-            .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
+            .setTargetRotation(targetRotation)
             .build()
 
         // ImageAnalysis. Using RGBA 8888 to match how our models work
         imageAnalyzer =
             ImageAnalysis.Builder().setResolutionSelector(resolutionSelector)
-                .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
+                .setTargetRotation(targetRotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                 .build()
@@ -412,7 +421,10 @@ class CameraFragment :
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        _fragmentCameraBinding?.updateTargetRotation(preview, imageAnalyzer)
+        _fragmentCameraBinding?.let { binding ->
+            targetRotation = binding.viewFinder.display?.rotation ?: targetRotation
+            binding.updateTargetRotation(preview, imageAnalyzer, targetRotation)
+        }
     }
 
     // Update UI after a hand gesture has been recognized. Extracts original
@@ -532,14 +544,21 @@ private fun FragmentCameraBinding.setRecognizerControlsEnabled(enabled: Boolean)
     controls.spinnerDelegate.isEnabled = enabled
 }
 
-private fun FragmentCameraBinding.updateTargetRotation(preview: Preview?, imageAnalyzer: ImageAnalysis?) {
-    val rotation = viewFinder.display?.rotation ?: return
+private fun FragmentCameraBinding.updateTargetRotation(preview: Preview?, imageAnalyzer: ImageAnalysis?, rotation: Int) {
     if (preview?.targetRotation != rotation) {
         preview?.targetRotation = rotation
     }
     if (imageAnalyzer?.targetRotation != rotation) {
         imageAnalyzer?.targetRotation = rotation
     }
+}
+
+private fun Int.toSurfaceRotation(): Int? = when {
+    this == OrientationEventListener.ORIENTATION_UNKNOWN -> null
+    this in 45 until 135 -> Surface.ROTATION_270
+    this in 135 until 225 -> Surface.ROTATION_180
+    this in 225 until 315 -> Surface.ROTATION_90
+    else -> Surface.ROTATION_0
 }
 
 private fun FragmentCameraBinding.bindThresholdControls(

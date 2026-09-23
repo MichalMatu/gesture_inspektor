@@ -12,6 +12,8 @@ The current runtime:
 - replaces MediaPipe Tasks' published remote stats factory with its no-op
   logger and excludes Google DataTransport,
 - recognizes up to two hands,
+- cross-checks `Pointing_Up`, `Victory`, and `ILoveYou` against 3D finger
+  geometry to reject ambiguous transitions,
 - keeps a stable tracking ID when MediaPipe reorders detections,
 - rejects stale frames, incomplete landmarks, invalid scores, and unsafe preset
   configurations,
@@ -93,6 +95,12 @@ These are static, per-hand gesture categories. Left/right/up/down movement,
 hold duration, stability, zones, and repeat behavior are computed by this
 application from hand landmarks; they are not extra MediaPipe model classes.
 
+The bundled classifier exposes only its winning class. Because transitions
+between one-finger, two-finger, and `ILoveYou` poses can briefly rank as
+`Victory`, the app independently checks joint angles, finger linearity, and
+reach in the 3D world landmarks. A correction is applied only when the geometry
+has a high score and a clear margin; raw model output remains in verbose logs.
+
 The canned model is not a sign-language recognizer, identity system, safety
 monitor, or general two-hand gesture classifier. Validate accuracy, lighting,
 occlusion, skin-tone coverage, camera placement, latency, and accidental
@@ -141,6 +149,9 @@ ILoveYou top/middle short hold   -> action.iloveyou_short
 ILoveYou bottom long hold        -> action.iloveyou_bottom_long
 ```
 
+Victory actions require at least 70% confidence to avoid firing on the common
+transition from `Victory` to `Pointing_Up` or `ILoveYou`.
+
 The `ILoveYou` bindings share an exclusive group. The highest-priority matching
 binding wins that hold; a repeating winner may continue, while peers cannot
 take over during its cooldown.
@@ -185,7 +196,9 @@ adb shell setprop log.tag.GestureInspector INFO
 
 Verbose lines include frame time, preset, stable track and detection IDs,
 handedness, candidates, raw/smoothed palm center, zones, movement, stable frame
-count, hold time, landmark reliability, and matched binding.
+count, hold time, landmark reliability, geometric finger-extension scores,
+classification source, and matched binding. The compact UI labels a remembered
+event as `Last action`, separately from the current gesture.
 
 ## Verification
 

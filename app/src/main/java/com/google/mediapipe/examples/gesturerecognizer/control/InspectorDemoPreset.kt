@@ -77,6 +77,7 @@ object InspectorDemoPreset {
                 gestureName = "Victory",
                 action = action("action.victory_still", "Victory still"),
                 triggerMode = GestureTriggerMode.OncePerHold,
+                minScore = MIN_VICTORY_ACTION_SCORE,
                 movement = MovementDirection.Still,
                 minHoldMs = 150L,
                 requireNoMovementDuringHold = true
@@ -86,6 +87,7 @@ object InspectorDemoPreset {
                 gestureName = "Victory",
                 action = action("action.victory_up", "Victory moved up", GestureActionType.Increment),
                 triggerMode = GestureTriggerMode.RepeatWhileHeld,
+                minScore = MIN_VICTORY_ACTION_SCORE,
                 movement = MovementDirection.Up,
                 repeatIntervalMs = 140L
             ),
@@ -94,6 +96,7 @@ object InspectorDemoPreset {
                 gestureName = "Victory",
                 action = action("action.victory_down", "Victory moved down", GestureActionType.Decrement),
                 triggerMode = GestureTriggerMode.RepeatWhileHeld,
+                minScore = MIN_VICTORY_ACTION_SCORE,
                 movement = MovementDirection.Down,
                 repeatIntervalMs = 140L
             ),
@@ -126,4 +129,6 @@ object InspectorDemoPreset {
         label = label,
         type = type
     )
+
+    private const val MIN_VICTORY_ACTION_SCORE = 0.70f
 }
